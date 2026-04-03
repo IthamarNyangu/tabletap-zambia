@@ -1,6 +1,30 @@
+import { DatabaseSetupState } from "@/components/layout/database-setup-state";
+import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { StaffDashboardView } from "@/components/staff/staff-dashboard-view";
-import { serviceRequests } from "@/lib/mock-data";
+import { customerDemoHref } from "@/lib/mock-data";
+import { getStaffDashboardData } from "@/lib/supabase/queries";
 
-export default function StaffPage() {
-  return <StaffDashboardView requests={serviceRequests} />;
+export const dynamic = "force-dynamic";
+
+export default async function StaffPage() {
+  const data = await getStaffDashboardData();
+
+  if (!data) {
+    return (
+      <DashboardShell
+        currentPath="/staff"
+        eyebrow="Staff dashboard"
+        title="Connect Supabase data to view service requests"
+        description="This page needs at least one seeded venue and request set before it can render the live staff workflow."
+        tablePreviewHref={customerDemoHref}
+      >
+        <DatabaseSetupState
+          title="No venue data was found"
+          description="Run the Phase 2 migrations and the seed script in Supabase, then refresh this page to load the real request queue."
+        />
+      </DashboardShell>
+    );
+  }
+
+  return <StaffDashboardView venue={data.venue} requests={data.requests} />;
 }

@@ -1,20 +1,22 @@
 "use client";
 
-import { startTransition, useEffect, useRef, useState } from "react";
+import { startTransition, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   CheckCircle2,
   ConciergeBell,
   LifeBuoy,
   ReceiptText,
-  Sparkles,
 } from "lucide-react";
 
+import { createServiceRequestAction } from "@/lib/actions/service-requests";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ServiceAction, ServiceActionType } from "@/lib/types";
 
 interface ServiceActionPanelProps {
+  venueSlug: string;
+  tableNumber: number;
   actions: ServiceAction[];
   tableLabel: string;
 }
@@ -28,8 +30,6 @@ const actionIcons: Record<ServiceActionType, LucideIcon> = {
   call_waiter: ConciergeBell,
   request_bill: ReceiptText,
   need_assistance: LifeBuoy,
-  water_refill: Sparkles,
-  manager_visit: ConciergeBell,
 };
 
 const timeFormatter = new Intl.DateTimeFormat("en-ZM", {
@@ -38,43 +38,45 @@ const timeFormatter = new Intl.DateTimeFormat("en-ZM", {
 });
 
 export function ServiceActionPanel({
+  venueSlug,
+  tableNumber,
   actions,
   tableLabel,
 }: ServiceActionPanelProps) {
-  const timeoutRef = useRef<number | null>(null);
-  const [activeAction, setActiveAction] = useState<ServiceActionType | null>(
+  const [pendingAction, setPendingAction] = useState<ServiceActionType | null>(
     null
   );
   const [confirmation, setConfirmation] = useState<ConfirmationState | null>(
     null
   );
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const availableActions = actions.filter((action) => action.enabled).slice(0, 3);
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current !== null) {
-        window.clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
+  const availableActions = actions.filter((action) => action.enabled);
 
   function handleAction(action: ServiceAction) {
-    setActiveAction(action.type);
+    setPendingAction(action.type);
+    setErrorMessage(null);
 
-    if (timeoutRef.current !== null) {
-      window.clearTimeout(timeoutRef.current);
-    }
+    startTransition(async () => {
+      const result = await createServiceRequestAction({
+        venueSlug,
+        tableNumber,
+        requestType: action.type,
+      });
 
-    timeoutRef.current = window.setTimeout(() => {
-      startTransition(() => {
+      if (result.success) {
         setConfirmation({
           label: action.label,
           requestedAt: timeFormatter.format(new Date()),
         });
-        setActiveAction(null);
-      });
-    }, 320);
+      } else {
+        setErrorMessage(
+          result.error ?? "We could not send that request. Please try again."
+        );
+      }
+
+      setPendingAction(null);
+    });
   }
 
   return (
@@ -87,23 +89,25 @@ export function ServiceActionPanel({
           Need something from your table?
         </h2>
         <p className="text-sm leading-7 text-muted-foreground">
-          Send a simple request and keep enjoying the moment. This MVP uses local
-          mock feedback only.
+          Send a simple request and keep enjoying the moment. Requests are now
+          created server-side and recorded in Supabase.
         </p>
       </div>
 
       <div className="grid gap-3">
         {availableActions.map((action) => {
           const Icon = actionIcons[action.type];
-          const isActive = activeAction === action.type;
+          const isPending = pendingAction === action.type;
 
           return (
             <Button
               key={action.type}
               type="button"
-              variant={isActive ? "default" : "outline"}
+              variant={isPending ? "default" : "outline"}
               size="lg"
               onClick={() => handleAction(action)}
+              disabled={pendingAction !== null}
+              aria-busy={isPending}
               className="h-auto min-h-28 w-full items-start justify-start rounded-[1.75rem] px-5 py-5 text-left shadow-sm shadow-black/5"
             >
               <span className="flex w-full items-start gap-4">
@@ -116,7 +120,7 @@ export function ServiceActionPanel({
                     {action.description}
                   </span>
                   <span className="text-xs font-medium uppercase tracking-[0.24em] text-primary/75 group-data-[variant=default]/button:text-primary-foreground/70">
-                    {isActive ? "Sending request..." : action.estimatedResponse}
+                    {isPending ? "Sending request..." : action.estimatedResponse}
                   </span>
                 </span>
               </span>
@@ -135,19 +139,31 @@ export function ServiceActionPanel({
               <div className="space-y-1">
                 <CardTitle className="text-lg">Request sent for {tableLabel}</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  {confirmation.label} was recorded locally at {confirmation.requestedAt}.
+                  {confirmation.label} was recorded at {confirmation.requestedAt}.
                 </p>
               </div>
             </CardHeader>
             <CardContent>
               <p className="text-sm leading-7 text-muted-foreground">
-                In the next phase, this will sync directly to the staff dashboard
-                and persist beyond the current session.
+                Staff will now see this request in the Supabase-backed dashboard.
               </p>
             </CardContent>
           </Card>
         ) : null}
       </div>
+
+      {errorMessage ? (
+        <Card className="rounded-[1.75rem] border border-destructive/20 bg-destructive/8 shadow-sm shadow-black/5">
+          <CardHeader className="gap-2">
+            <CardTitle className="text-lg">Request not sent</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm leading-7 text-muted-foreground">
+              {errorMessage}
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
     </section>
   );
 }

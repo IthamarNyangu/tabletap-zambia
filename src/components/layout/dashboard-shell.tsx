@@ -4,7 +4,7 @@ import { ArrowRight, Building2, ScanLine, UsersRound } from "lucide-react";
 
 import { BrandMark } from "@/components/layout/brand-mark";
 import { Button } from "@/components/ui/button";
-import { demoVenue } from "@/lib/mock-data";
+import { customerDemoHref } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 interface DashboardShellProps {
@@ -12,34 +12,36 @@ interface DashboardShellProps {
   eyebrow: string;
   title: string;
   description: string;
+  tablePreviewHref?: string;
   children: ReactNode;
 }
-
-const navLinks = [
-  {
-    href: "/staff",
-    label: "Staff",
-    icon: UsersRound,
-  },
-  {
-    href: "/admin",
-    label: "Admin",
-    icon: Building2,
-  },
-  {
-    href: `/v/${demoVenue.slug}/t/${demoVenue.demoTableNumber}`,
-    label: "Demo table",
-    icon: ScanLine,
-  },
-] as const;
 
 export function DashboardShell({
   currentPath,
   eyebrow,
   title,
   description,
+  tablePreviewHref = customerDemoHref,
   children,
 }: DashboardShellProps) {
+  const navLinks = [
+    {
+      href: "/staff",
+      label: "Staff",
+      icon: UsersRound,
+    },
+    {
+      href: "/admin",
+      label: "Admin",
+      icon: Building2,
+    },
+    {
+      href: tablePreviewHref,
+      label: "Demo table",
+      icon: ScanLine,
+    },
+  ] as const;
+
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,rgba(243,239,232,0.9),rgba(248,246,241,1))]">
       <div className="mx-auto flex min-h-screen max-w-6xl flex-col px-4 py-4 sm:px-6 lg:px-8">
@@ -88,9 +90,7 @@ export function DashboardShell({
         <main className="flex-1 py-6">{children}</main>
 
         <footer className="flex flex-col gap-4 rounded-[2rem] border border-white/60 bg-white/75 p-4 text-sm text-muted-foreground shadow-sm shadow-black/5 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-          <p>
-            Mock-only MVP foundation for venue, staff, and admin workflows.
-          </p>
+          <p>Supabase-backed MVP workflow for venue, staff, and guest flows.</p>
           <Button asChild variant="ghost" className="justify-start sm:justify-center">
             <Link href="/">
               View product landing

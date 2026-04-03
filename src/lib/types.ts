@@ -1,23 +1,25 @@
-export type VenueType =
-  | "restaurant"
-  | "bar"
-  | "lounge"
-  | "lodge"
-  | "outdoor";
+export const serviceRequestTypes = [
+  "call_waiter",
+  "request_bill",
+  "need_assistance",
+] as const;
 
-export type ServiceActionType =
-  | "call_waiter"
-  | "request_bill"
-  | "need_assistance"
-  | "water_refill"
-  | "manager_visit";
+export type ServiceActionType = (typeof serviceRequestTypes)[number];
 
-export type ServiceRequestStatus = "pending" | "attended" | "closed";
+export const serviceRequestStatuses = [
+  "pending",
+  "attended",
+  "closed",
+] as const;
 
-export type TableStatus = "ready" | "occupied" | "reserved";
+export type ServiceRequestStatus = (typeof serviceRequestStatuses)[number];
+
+export const tableStatuses = ["ready", "occupied", "reserved"] as const;
+
+export type TableStatus = (typeof tableStatuses)[number];
 
 export interface MarketingFeature {
-  id: string;
+  id: "scan-menu" | "service-actions" | "light-ops";
   eyebrow: string;
   title: string;
   description: string;
@@ -30,71 +32,231 @@ export interface AudienceSegment {
   venueExamples: string[];
 }
 
-export interface ServiceAction {
+export interface LandingPreviewVenue {
+  name: string;
+  description: string;
+  location: string;
+  ambienceNote: string;
+  actionLabels: string[];
+  previewHref: string;
+}
+
+export interface ServiceActionDefinition {
   type: ServiceActionType;
   label: string;
   shortLabel: string;
   description: string;
   estimatedResponse: string;
+}
+
+export interface ServiceAction extends ServiceActionDefinition {
   enabled: boolean;
 }
 
-export interface DailySpecial {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  note: string;
-}
-
-export interface MenuItem {
+export interface VenueRow {
   id: string;
   name: string;
+  slug: string;
+  tagline: string;
+  location: string;
   description: string;
-  price: number;
-  highlight?: string;
-  tags?: string[];
+  ambience_note: string;
+  created_at: string;
 }
 
-export interface MenuCategory {
+export interface VenueTableRow {
   id: string;
-  name: string;
-  description: string;
-  items: MenuItem[];
-}
-
-export interface TableInfo {
-  number: string;
+  venue_id: string;
+  table_number: number;
   label: string;
   zone: string;
   seats: number;
   status: TableStatus;
-  qrLabel: string;
+  qr_code_value: string;
+  created_at: string;
+}
+
+export interface MenuCategoryRow {
+  id: string;
+  venue_id: string;
+  name: string;
+  description: string | null;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface MenuItemRow {
+  id: string;
+  category_id: string;
+  name: string;
+  description: string;
+  price: number | string;
+  highlight: string | null;
+  tags: string[];
+  is_available: boolean;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface MenuCategoryWithItemsRow extends MenuCategoryRow {
+  menu_items: MenuItemRow[] | null;
+}
+
+export interface VenueActionsRow {
+  id: string;
+  venue_id: string;
+  call_waiter_enabled: boolean;
+  request_bill_enabled: boolean;
+  need_assistance_enabled: boolean;
+  created_at: string;
+}
+
+export interface ServiceRequestRow {
+  id: string;
+  venue_id: string;
+  table_id: string;
+  request_type: ServiceActionType;
+  status: ServiceRequestStatus;
+  note: string | null;
+  created_at: string;
+  attended_at: string | null;
+  closed_at: string | null;
+}
+
+export interface ServiceRequestWithTableRow extends ServiceRequestRow {
+  tables:
+    | Pick<VenueTableRow, "table_number">
+    | Pick<VenueTableRow, "table_number">[]
+    | null;
 }
 
 export interface Venue {
   id: string;
-  slug: string;
   name: string;
+  slug: string;
   tagline: string;
-  type: VenueType;
   location: string;
   description: string;
   ambienceNote: string;
-  serviceActions: ServiceAction[];
-  specials: DailySpecial[];
-  menuCategories: MenuCategory[];
-  tables: TableInfo[];
-  demoTableNumber: string;
+  createdAt: string;
+}
+
+export interface VenueTable {
+  id: string;
+  venueId: string;
+  tableNumber: number;
+  label: string;
+  zone: string;
+  seats: number;
+  status: TableStatus;
+  qrCodeValue: string;
+  createdAt: string;
+}
+
+export interface MenuItem {
+  id: string;
+  categoryId: string;
+  name: string;
+  description: string;
+  price: number;
+  highlight: string | null;
+  tags: string[];
+  isAvailable: boolean;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export interface MenuCategory {
+  id: string;
+  venueId: string;
+  name: string;
+  description: string | null;
+  sortOrder: number;
+  createdAt: string;
+  items: MenuItem[];
+}
+
+export interface VenueActions {
+  id: string;
+  venueId: string;
+  callWaiterEnabled: boolean;
+  requestBillEnabled: boolean;
+  needAssistanceEnabled: boolean;
+  createdAt: string;
 }
 
 export interface ServiceRequest {
   id: string;
-  venueSlug: string;
-  tableNumber: string;
+  venueId: string;
+  tableId: string;
+  tableNumber: number;
   requestType: ServiceActionType;
-  timestamp: string;
   status: ServiceRequestStatus;
-  note?: string;
-  partySize?: number;
+  note: string | null;
+  createdAt: string;
+  attendedAt: string | null;
+  closedAt: string | null;
 }
+
+export interface CustomerTablePageData {
+  venue: Venue;
+  table: VenueTable;
+  menuCategories: MenuCategory[];
+  specials: MenuItem[];
+  venueActions: VenueActions;
+  serviceActions: ServiceAction[];
+}
+
+export interface StaffDashboardData {
+  venue: Venue;
+  requests: ServiceRequest[];
+}
+
+export interface AdminDashboardData {
+  venue: Venue;
+  tables: VenueTable[];
+  menuCategories: MenuCategory[];
+  venueActions: VenueActions;
+  serviceActions: ServiceAction[];
+  requestCount: number;
+  activeRequestCount: number;
+}
+
+export interface ServiceRequestActionResult {
+  success: boolean;
+  message?: string;
+  error?: string;
+  requestId?: string;
+}
+
+export interface ServiceRequestStatusActionResult {
+  success: boolean;
+  error?: string;
+}
+
+export const serviceActionDefinitions: Record<
+  ServiceActionType,
+  ServiceActionDefinition
+> = {
+  call_waiter: {
+    type: "call_waiter",
+    label: "Call Waiter",
+    shortLabel: "Waiter",
+    description: "Let staff know your table is ready for service.",
+    estimatedResponse: "Usually under 2 minutes",
+  },
+  request_bill: {
+    type: "request_bill",
+    label: "Request Bill",
+    shortLabel: "Bill",
+    description: "Ask for the bill without losing the flow of the table.",
+    estimatedResponse: "Prepared within 3 minutes",
+  },
+  need_assistance: {
+    type: "need_assistance",
+    label: "Need Assistance",
+    shortLabel: "Assistance",
+    description: "Use this for menu questions or a quick check-in.",
+    estimatedResponse: "A team member will stop by soon",
+  },
+};

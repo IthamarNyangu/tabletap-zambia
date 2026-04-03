@@ -13,11 +13,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import type { TableInfo, Venue } from "@/lib/types";
+import type { MenuCategory, MenuItem, ServiceAction, Venue, VenueTable } from "@/lib/types";
 
 interface CustomerTableViewProps {
   venue: Venue;
-  table: TableInfo;
+  table: VenueTable;
+  menuCategories: MenuCategory[];
+  specials: MenuItem[];
+  serviceActions: ServiceAction[];
 }
 
 const currencyFormatter = new Intl.NumberFormat("en-ZM", {
@@ -29,6 +32,9 @@ const currencyFormatter = new Intl.NumberFormat("en-ZM", {
 export function CustomerTableView({
   venue,
   table,
+  menuCategories,
+  specials,
+  serviceActions,
 }: CustomerTableViewProps) {
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,rgba(240,236,229,0.9),rgba(249,247,242,1))]">
@@ -93,31 +99,45 @@ export function CustomerTableView({
             </div>
 
             <div className="mt-5 grid gap-3">
-              {venue.specials.map((special) => (
-                <div
-                  key={special.id}
-                  className="rounded-[1.5rem] border border-white/12 bg-white/10 p-4 backdrop-blur"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-2">
-                      <h3 className="text-lg font-semibold">{special.title}</h3>
-                      <p className="text-sm leading-7 text-primary-foreground/74">
-                        {special.description}
-                      </p>
-                      <p className="text-xs font-medium uppercase tracking-[0.24em] text-primary-foreground/62">
-                        {special.note}
-                      </p>
+              {specials.length ? (
+                specials.map((special) => (
+                  <div
+                    key={special.id}
+                    className="rounded-[1.5rem] border border-white/12 bg-white/10 p-4 backdrop-blur"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-semibold">{special.name}</h3>
+                        <p className="text-sm leading-7 text-primary-foreground/74">
+                          {special.description}
+                        </p>
+                        <p className="text-xs font-medium uppercase tracking-[0.24em] text-primary-foreground/62">
+                          {special.highlight ?? "Featured today"}
+                        </p>
+                      </div>
+                      <Badge className="bg-white/90 text-primary shadow-none">
+                        {currencyFormatter.format(special.price)}
+                      </Badge>
                     </div>
-                    <Badge className="bg-white/90 text-primary shadow-none">
-                      {currencyFormatter.format(special.price)}
-                    </Badge>
                   </div>
+                ))
+              ) : (
+                <div className="rounded-[1.5rem] border border-white/12 bg-white/10 p-4 backdrop-blur">
+                  <p className="text-sm leading-7 text-primary-foreground/74">
+                    No specials have been published yet. The full menu is still
+                    available below.
+                  </p>
                 </div>
-              ))}
+              )}
             </div>
           </section>
 
-          <ServiceActionPanel actions={venue.serviceActions} tableLabel={table.label} />
+          <ServiceActionPanel
+            venueSlug={venue.slug}
+            tableNumber={table.tableNumber}
+            actions={serviceActions}
+            tableLabel={table.label}
+          />
 
           <section className="space-y-4">
             <div className="space-y-2">
@@ -134,7 +154,7 @@ export function CustomerTableView({
             </div>
 
             <div className="grid gap-4">
-              {venue.menuCategories.map((category) => (
+              {menuCategories.map((category) => (
                 <Card
                   key={category.id}
                   className="rounded-[2rem] border-white/70 bg-white/85 shadow-lg shadow-black/5 backdrop-blur"
@@ -146,7 +166,7 @@ export function CustomerTableView({
                           {category.name}
                         </CardTitle>
                         <CardDescription className="text-sm leading-7">
-                          {category.description}
+                          {category.description ?? "Browse this section of the menu."}
                         </CardDescription>
                       </div>
                       <div className="flex size-11 items-center justify-center rounded-2xl bg-secondary text-primary">

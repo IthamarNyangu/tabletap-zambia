@@ -1,34 +1,35 @@
 import { notFound } from "next/navigation";
 
 import { CustomerTableView } from "@/components/customer/customer-table-view";
-import { getTableForVenue, getVenueBySlug, venues } from "@/lib/mock-data";
+import { getCustomerTablePageData } from "@/lib/supabase/queries";
+import { customerRouteParamsSchema } from "@/lib/validations/service-request";
 
-export async function generateStaticParams() {
-  return venues.flatMap((venue) =>
-    venue.tables.map((table) => ({
-      venueSlug: venue.slug,
-      tableNumber: table.number,
-    }))
-  );
-}
+export const dynamic = "force-dynamic";
 
 export default async function CustomerTablePage({
   params,
 }: {
   params: Promise<{ venueSlug: string; tableNumber: string }>;
 }) {
-  const { venueSlug, tableNumber } = await params;
-  const venue = getVenueBySlug(venueSlug);
+  const parsedParams = customerRouteParamsSchema.safeParse(await params);
 
-  if (!venue) {
+  if (!parsedParams.success) {
     notFound();
   }
 
-  const table = getTableForVenue(venue, tableNumber);
+  const data = await getCustomerTablePageData(parsedParams.data);
 
-  if (!table) {
+  if (!data) {
     notFound();
   }
 
-  return <CustomerTableView venue={venue} table={table} />;
+  return (
+    <CustomerTableView
+      venue={data.venue}
+      table={data.table}
+      menuCategories={data.menuCategories}
+      specials={data.specials}
+      serviceActions={data.serviceActions}
+    />
+  );
 }

@@ -26,7 +26,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import {
   audienceSegments,
-  demoVenue,
+  customerDemoHref,
+  landingPreviewVenue,
   marketingFeatures,
 } from "@/lib/mock-data";
 
@@ -40,7 +41,7 @@ const previewLinks = [
   {
     title: "Customer table page",
     description: "A mobile-first menu and service surface for guests.",
-    href: `/v/${demoVenue.slug}/t/${demoVenue.demoTableNumber}`,
+    href: customerDemoHref,
     icon: ScanLine,
   },
   {
@@ -71,7 +72,7 @@ export function LandingPage() {
               <Link href="/admin">Admin</Link>
             </Button>
             <Button asChild>
-              <Link href={`/v/${demoVenue.slug}/t/${demoVenue.demoTableNumber}`}>
+              <Link href={customerDemoHref}>
                 View live demo
                 <ArrowRight className="size-4" />
               </Link>
@@ -85,7 +86,7 @@ export function LandingPage() {
             <div className="relative grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
               <div className="space-y-6">
                 <Badge className="border-white/15 bg-white/12 px-3 py-1 text-primary-foreground backdrop-blur">
-                  Phase 1 foundation
+                  Phase 2 foundation
                 </Badge>
                 <div className="space-y-4">
                   <h1 className="max-w-3xl font-heading text-4xl leading-tight sm:text-5xl lg:text-6xl">
@@ -101,7 +102,7 @@ export function LandingPage() {
 
                 <div className="flex flex-wrap gap-3">
                   <Button asChild size="lg" className="rounded-full bg-white text-primary hover:bg-white/90">
-                    <Link href={`/v/${demoVenue.slug}/t/${demoVenue.demoTableNumber}`}>
+                    <Link href={customerDemoHref}>
                       Open customer demo
                       <ArrowRight className="size-4" />
                     </Link>
@@ -127,7 +128,7 @@ export function LandingPage() {
                     <p className="text-xs uppercase tracking-[0.3em] text-primary-foreground/65">
                       Current scope
                     </p>
-                    <p className="mt-2 font-medium">Mocked flows, no backend yet</p>
+                    <p className="mt-2 font-medium">Supabase-backed MVP flows</p>
                   </div>
                   <div className="rounded-3xl border border-white/12 bg-white/10 p-4 backdrop-blur">
                     <p className="text-xs uppercase tracking-[0.3em] text-primary-foreground/65">
@@ -273,10 +274,10 @@ export function LandingPage() {
                 </p>
                 <div className="space-y-2">
                   <CardTitle className="font-heading text-3xl">
-                    {demoVenue.name}
+                    {landingPreviewVenue.name}
                   </CardTitle>
                   <CardDescription className="text-sm leading-7">
-                    {demoVenue.description}
+                    {landingPreviewVenue.description}
                   </CardDescription>
                 </div>
               </CardHeader>
@@ -285,16 +286,16 @@ export function LandingPage() {
                   <div className="rounded-[1.5rem] border border-border/60 bg-secondary/45 p-4">
                     <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                       <MapPinned className="size-4 text-primary" />
-                      {demoVenue.location}
+                      {landingPreviewVenue.location}
                     </div>
                     <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                      {demoVenue.ambienceNote}
+                      {landingPreviewVenue.ambienceNote}
                     </p>
                   </div>
                   <div className="rounded-[1.5rem] border border-border/60 bg-secondary/45 p-4">
                     <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                       <ShieldCheck className="size-4 text-primary" />
-                      Phase 1 boundaries
+                      Phase 2 boundaries
                     </div>
                     <p className="mt-2 text-sm leading-7 text-muted-foreground">
                       No auth, payments, notifications, waiter assignment, or
@@ -310,17 +311,15 @@ export function LandingPage() {
                     What guests can do today
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {demoVenue.serviceActions
-                      .filter((action) => action.enabled)
-                      .map((action) => (
-                        <Badge
-                          key={action.type}
-                          variant="outline"
-                          className="border-primary/15 bg-background/70 px-3 py-1"
-                        >
-                          {action.label}
-                        </Badge>
-                      ))}
+                    {landingPreviewVenue.actionLabels.map((label) => (
+                      <Badge
+                        key={label}
+                        variant="outline"
+                        className="border-primary/15 bg-background/70 px-3 py-1"
+                      >
+                        {label}
+                      </Badge>
+                    ))}
                   </div>
                 </div>
               </CardContent>
@@ -339,14 +338,14 @@ export function LandingPage() {
                   workflows are clear.
                 </h2>
                 <p className="text-sm leading-7 text-primary-foreground/78 sm:text-base">
-                  This foundation is ready for the next phase: state persistence,
-                  backend wiring, and request handling that moves beyond mock data.
+                  This foundation is ready for the next phase: auth, stronger
+                  staff controls, and policies layered on top of the new data model.
                 </p>
               </div>
 
               <div className="flex flex-wrap gap-3">
                 <Button asChild size="lg" className="rounded-full bg-white text-primary hover:bg-white/90">
-                  <Link href={`/v/${demoVenue.slug}/t/${demoVenue.demoTableNumber}`}>
+                  <Link href={customerDemoHref}>
                     Preview guest flow
                     <UtensilsCrossed className="size-4" />
                   </Link>

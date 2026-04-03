@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     template: "%s | TableTap Zambia",
   },
   description:
-    "Phase 1 MVP foundation for a QR-based table service product for restaurants, bars, lounges, lodges, and outdoor venues.",
+    "Supabase-backed MVP for a QR-based table service product for restaurants, bars, lounges, lodges, and outdoor venues.",
 };
 
 export default function RootLayout({

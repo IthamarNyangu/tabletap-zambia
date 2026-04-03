@@ -25,7 +25,7 @@ export function BrandMark({
           {!compact ? <Sparkles className="size-3.5 text-primary/70" /> : null}
         </span>
         <span className="truncate font-heading text-lg leading-none text-foreground">
-          {compact ? "Table service, simplified" : "Phase 1 MVP foundation"}
+          {compact ? "Table service, simplified" : "Supabase-backed MVP"}
         </span>
       </span>
     </>

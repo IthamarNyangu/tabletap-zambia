@@ -1,6 +1,5 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  BellRing,
   LayoutGrid,
   MapPinned,
   QrCode,
@@ -8,7 +7,6 @@ import {
   ShieldCheck,
   Sparkles,
   UtensilsCrossed,
-  Waves,
 } from "lucide-react";
 
 import { DashboardShell } from "@/components/layout/dashboard-shell";
@@ -29,16 +27,22 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type {
+  MenuCategory,
+  ServiceAction,
   ServiceActionType,
-  ServiceRequest,
   TableStatus,
   Venue,
+  VenueTable,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface AdminDashboardViewProps {
   venue: Venue;
-  requests: ServiceRequest[];
+  tables: VenueTable[];
+  menuCategories: MenuCategory[];
+  serviceActions: ServiceAction[];
+  requestCount: number;
+  activeRequestCount: number;
 }
 
 const currencyFormatter = new Intl.NumberFormat("en-ZM", {
@@ -57,30 +61,32 @@ const tableStatusClassMap: Record<TableStatus, string> = {
 };
 
 const actionIcons: Record<ServiceActionType, LucideIcon> = {
-  call_waiter: BellRing,
+  call_waiter: Sparkles,
   request_bill: ReceiptText,
-  need_assistance: Sparkles,
-  water_refill: Waves,
-  manager_visit: ShieldCheck,
+  need_assistance: ShieldCheck,
 };
 
 export function AdminDashboardView({
   venue,
-  requests,
+  tables,
+  menuCategories,
+  serviceActions,
+  requestCount,
+  activeRequestCount,
 }: AdminDashboardViewProps) {
-  const totalMenuItems = venue.menuCategories.reduce(
+  const totalMenuItems = menuCategories.reduce(
     (count, category) => count + category.items.length,
     0
   );
-  const activeRequests = requests.filter((request) => request.status !== "closed");
-  const enabledActions = venue.serviceActions.filter((action) => action.enabled);
+  const enabledActions = serviceActions.filter((action) => action.enabled);
 
   return (
     <DashboardShell
       currentPath="/admin"
       eyebrow="Admin dashboard"
       title="Venue overview, table preview, and menu structure at a glance"
-      description="This Phase 1 admin screen is intentionally lightweight. It previews the venue setup without introducing database workflows, payments, or advanced operations."
+      description="This MVP admin screen stays intentionally light: real data, clear read-only visibility, and no extra CRUD complexity yet."
+      tablePreviewHref={`/v/${venue.slug}/t/${tables[0]?.tableNumber ?? 1}`}
     >
       <div className="space-y-5">
         <Card className="rounded-[2rem] border-border/60 bg-white/88 shadow-lg shadow-black/5">
@@ -111,7 +117,7 @@ export function AdminDashboardView({
                 <div className="rounded-[1.5rem] border border-border/60 bg-secondary/45 p-4">
                   <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                     <QrCode className="size-4 text-primary" />
-                    Demo table {venue.demoTableNumber}
+                    Demo table {tables[0]?.tableNumber ?? 1}
                   </div>
                   <p className="mt-2 text-sm leading-7 text-muted-foreground">
                     {venue.ambienceNote}
@@ -127,7 +133,7 @@ export function AdminDashboardView({
                     Tables
                   </p>
                   <CardTitle className="font-heading text-3xl">
-                    {venue.tables.length}
+                    {tables.length}
                   </CardTitle>
                 </CardHeader>
               </Card>
@@ -137,7 +143,7 @@ export function AdminDashboardView({
                     Active requests
                   </p>
                   <CardTitle className="font-heading text-3xl">
-                    {activeRequests.length}
+                    {activeRequestCount}
                   </CardTitle>
                 </CardHeader>
               </Card>
@@ -154,10 +160,10 @@ export function AdminDashboardView({
               <Card className="rounded-[1.5rem] border-border/60 bg-background/90 shadow-sm">
                 <CardHeader className="space-y-2">
                   <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary/80">
-                    Enabled actions
+                    Total requests
                   </p>
                   <CardTitle className="font-heading text-3xl">
-                    {enabledActions.length}
+                    {requestCount}
                   </CardTitle>
                 </CardHeader>
               </Card>
@@ -177,7 +183,7 @@ export function AdminDashboardView({
                     Table list
                   </p>
                   <CardTitle className="font-heading text-3xl">
-                    Mock floor setup
+                    Current floor setup
                   </CardTitle>
                 </div>
               </div>
@@ -194,8 +200,8 @@ export function AdminDashboardView({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {venue.tables.map((table) => (
-                    <TableRow key={table.number}>
+                  {tables.map((table) => (
+                    <TableRow key={table.id}>
                       <TableCell className="font-medium text-foreground">
                         {table.label}
                       </TableCell>
@@ -209,7 +215,7 @@ export function AdminDashboardView({
                           {table.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>{table.qrLabel}</TableCell>
+                      <TableCell>{table.qrCodeValue}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -228,13 +234,13 @@ export function AdminDashboardView({
                     Service actions
                   </p>
                   <CardTitle className="font-heading text-3xl">
-                    Enabled and disabled controls
+                    Current venue settings
                   </CardTitle>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              {venue.serviceActions.map((action) => {
+              {serviceActions.map((action) => {
                 const Icon = actionIcons[action.type];
 
                 return (
@@ -274,6 +280,13 @@ export function AdminDashboardView({
                   </div>
                 );
               })}
+
+              <div className="rounded-[1.5rem] border border-border/60 bg-secondary/35 p-4">
+                <p className="text-sm leading-7 text-muted-foreground">
+                  {enabledActions.length} of {serviceActions.length} service
+                  actions are currently enabled for guests.
+                </p>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -289,13 +302,13 @@ export function AdminDashboardView({
                   Menu preview
                 </p>
                 <CardTitle className="font-heading text-3xl">
-                  Categories and items ready for a richer backend later
+                  Categories and items backed by Supabase now
                 </CardTitle>
               </div>
             </div>
           </CardHeader>
           <CardContent className="grid gap-4 lg:grid-cols-3">
-            {venue.menuCategories.map((category) => (
+            {menuCategories.map((category) => (
               <div
                 key={category.id}
                 className="rounded-[1.75rem] border border-border/60 bg-background/90 p-5"
@@ -305,7 +318,7 @@ export function AdminDashboardView({
                     {category.name}
                   </h3>
                   <p className="text-sm leading-7 text-muted-foreground">
-                    {category.description}
+                    {category.description ?? "Menu items for this section."}
                   </p>
                 </div>
                 <div className="mt-4 space-y-3">
