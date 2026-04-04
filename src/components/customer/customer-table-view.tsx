@@ -4,6 +4,7 @@ import {
   ArrowRight,
   CheckCircle2,
   CircleAlert,
+  QrCode,
   UtensilsCrossed,
 } from "lucide-react";
 
@@ -140,9 +141,14 @@ export function CustomerTableView({
       <div className="mx-auto flex min-h-screen max-w-sm flex-col px-4 pb-[calc(env(safe-area-inset-bottom)+0.875rem)] pt-3 sm:max-w-md sm:px-5">
         <header className="rounded-[1.5rem] border border-white/80 bg-white/94 px-4 py-3 shadow-lg shadow-black/5 backdrop-blur">
           <div className="flex items-center justify-between gap-3">
-            <p className="min-w-0 truncate text-[11px] font-semibold uppercase tracking-[0.32em] text-primary/75">
-              TableTap Zambia
-            </p>
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-2xl border border-white/60 bg-white/85 shadow-sm shadow-black/5">
+                <QrCode className="size-4 text-primary" />
+              </span>
+              <p className="min-w-0 truncate text-[11px] font-semibold uppercase tracking-[0.32em] text-primary/75">
+                TableTap Zambia
+              </p>
+            </div>
             <Badge className="shrink-0 rounded-full bg-primary px-3 py-1 text-primary-foreground">
               {table.label}
             </Badge>
@@ -167,7 +173,7 @@ export function CustomerTableView({
             </section>
 
             <section className="space-y-3">
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 text-center">
                 <h2 className="font-heading text-[2rem] leading-tight text-foreground">
                   Choose the next step
                 </h2>

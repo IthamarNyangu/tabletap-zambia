@@ -16,6 +16,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import {
   createServiceRequestSchema,
   staffRequestFilterSchema,
+  staffPageSchema,
   updateServiceRequestStatusSchema,
 } from "@/lib/validations/service-request";
 
@@ -37,13 +38,19 @@ function isRequestTypeEnabled(
 
 function resolveStaffRedirectPath(input: {
   filter?: string | null;
+  page?: string | null;
   error?: string | null;
 }) {
   const searchParams = new URLSearchParams();
   const parsedFilter = staffRequestFilterSchema.safeParse(input.filter);
+  const parsedPage = staffPageSchema.safeParse(input.page);
 
   if (parsedFilter.success && parsedFilter.data !== "all") {
     searchParams.set("status", parsedFilter.data);
+  }
+
+  if (parsedPage.success && parsedPage.data > 1) {
+    searchParams.set("page", String(parsedPage.data));
   }
 
   if (input.error) {
@@ -202,15 +209,14 @@ export async function updateServiceRequestStatusAction(
   }
 
   const supabase = createSupabaseServiceRoleClient();
-  const { requestId, nextStatus } = parsedInput.data;
+  const { requestIds, nextStatus } = parsedInput.data;
 
   const { data: requestData, error: requestError } = await supabase
     .from("service_requests")
     .select(
-      "id, status, attended_at, venue_id, tables!service_requests_table_id_fkey(table_number), venues(slug)"
+      "id, status, request_type, table_id, attended_at, venue_id, tables!service_requests_table_id_fkey(table_number), venues(slug)"
     )
-    .eq("id", requestId)
-    .maybeSingle();
+    .in("id", requestIds);
 
   if (requestError) {
     return {
@@ -219,23 +225,40 @@ export async function updateServiceRequestStatusAction(
     };
   }
 
-  const currentRequest = (requestData as {
+  const currentRequests = ((requestData ?? []) as {
     id: string;
     status: "pending" | "attended" | "closed";
+    request_type: ServiceActionType;
+    table_id: string;
     attended_at: string | null;
     venue_id: string;
     tables: { table_number: number }[] | { table_number: number } | null;
     venues: { slug: string }[] | { slug: string } | null;
-  } | null) ?? null;
+  }[]).filter(Boolean);
 
-  if (!currentRequest) {
+  if (!currentRequests.length || currentRequests.length !== requestIds.length) {
     return {
       success: false,
-      error: "That request could not be found.",
+      error: "One or more requests could not be found.",
     };
   }
 
-  const currentStatus = currentRequest.status;
+  const currentStatus = currentRequests[0]?.status;
+
+  if (
+    currentRequests.some(
+      (request) =>
+        request.status !== currentStatus ||
+        request.venue_id !== currentRequests[0]?.venue_id ||
+        request.table_id !== currentRequests[0]?.table_id ||
+        request.request_type !== currentRequests[0]?.request_type
+    )
+  ) {
+    return {
+      success: false,
+      error: "Those requests could not be updated as a single group.",
+    };
+  }
 
   if (nextStatus === "attended" && currentStatus !== "pending") {
     return {
@@ -261,14 +284,16 @@ export async function updateServiceRequestStatusAction(
         }
       : {
           status: "closed" as const,
-          attended_at: currentRequest.attended_at ?? now,
+          attended_at:
+            currentRequests.find((request) => request.attended_at)?.attended_at ??
+            now,
           closed_at: now,
         };
 
   const { error: updateError } = await supabase
     .from("service_requests")
     .update(updatePayload)
-    .eq("id", requestId);
+    .in("id", requestIds);
 
   if (updateError) {
     return {
@@ -280,12 +305,13 @@ export async function updateServiceRequestStatusAction(
   revalidatePath("/staff");
   revalidatePath("/admin");
 
-  const requestVenue = Array.isArray(currentRequest.venues)
-    ? currentRequest.venues[0]
-    : currentRequest.venues;
-  const requestTable = Array.isArray(currentRequest.tables)
-    ? currentRequest.tables[0]
-    : currentRequest.tables;
+  const primaryRequest = currentRequests[0];
+  const requestVenue = Array.isArray(primaryRequest?.venues)
+    ? primaryRequest.venues[0]
+    : primaryRequest?.venues;
+  const requestTable = Array.isArray(primaryRequest?.tables)
+    ? primaryRequest.tables[0]
+    : primaryRequest?.tables;
 
   if (requestVenue?.slug && requestTable?.table_number) {
     revalidatePath(
@@ -299,18 +325,23 @@ export async function updateServiceRequestStatusAction(
 }
 
 export async function submitStaffStatusUpdateFormAction(formData: FormData) {
-  const requestId = String(formData.get("requestId") ?? "");
+  const requestIds = formData
+    .getAll("requestIds")
+    .map((value) => String(value))
+    .filter(Boolean);
   const nextStatus = String(formData.get("nextStatus") ?? "");
   const filter = formData.get("filter");
+  const page = formData.get("page");
 
   const result = await updateServiceRequestStatusAction({
-    requestId,
+    requestIds,
     nextStatus,
   });
 
   redirect(
     resolveStaffRedirectPath({
       filter: typeof filter === "string" ? filter : null,
+      page: typeof page === "string" ? page : null,
       error: result.success
         ? null
         : result.error ?? "We could not update that request right now.",
