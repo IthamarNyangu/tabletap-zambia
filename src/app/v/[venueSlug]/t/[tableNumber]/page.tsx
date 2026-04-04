@@ -19,6 +19,7 @@ export default async function CustomerTablePage({
   searchParams: Promise<{
     view?: string;
     notice?: string;
+    sent?: string;
     error?: string;
   }>;
 }) {
@@ -32,6 +33,22 @@ export default async function CustomerTablePage({
   const parsedView = customerViewSchema.safeParse(resolvedSearchParams.view);
   const view = parsedView.success ? parsedView.data : "home";
   const notice = requestTypeSchema.safeParse(resolvedSearchParams.notice);
+  const sent = requestTypeSchema.safeParse(resolvedSearchParams.sent);
+  const search = new URLSearchParams();
+
+  if (view === "menu") {
+    search.set("view", "menu");
+  }
+
+  if (notice.success) {
+    search.set("sent", notice.data);
+  } else if (sent.success) {
+    search.set("sent", sent.data);
+  }
+
+  const dismissHref = `/v/${parsedParams.data.venueSlug}/t/${parsedParams.data.tableNumber}${
+    search.size ? `?${search.toString()}` : ""
+  }`;
   const feedback =
     notice.success
       ? {
@@ -39,6 +56,7 @@ export default async function CustomerTablePage({
           title: serviceActionDefinitions[notice.data].label,
           message: serviceActionDefinitions[notice.data].successMessage,
           actionType: notice.data,
+          dismissHref,
         }
       : resolvedSearchParams.error
         ? {
@@ -46,6 +64,9 @@ export default async function CustomerTablePage({
             title: "Request not sent",
             message: resolvedSearchParams.error,
             actionType: null,
+            dismissHref: `/v/${parsedParams.data.venueSlug}/t/${parsedParams.data.tableNumber}${
+              view === "menu" ? "?view=menu" : ""
+            }`,
           }
         : null;
 
@@ -64,6 +85,7 @@ export default async function CustomerTablePage({
       serviceActions={data.serviceActions}
       view={view}
       feedback={feedback}
+      sentActionType={sent.success ? sent.data : null}
     />
   );
 }

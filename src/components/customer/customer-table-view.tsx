@@ -34,6 +34,7 @@ interface CustomerFeedback {
   title: string;
   message: string;
   actionType?: ServiceActionType | null;
+  dismissHref: string;
 }
 
 interface CustomerTableViewProps {
@@ -44,6 +45,7 @@ interface CustomerTableViewProps {
   serviceActions: ServiceAction[];
   view: CustomerView;
   feedback?: CustomerFeedback | null;
+  sentActionType?: ServiceActionType | null;
 }
 
 const currencyFormatter = new Intl.NumberFormat("en-ZM", {
@@ -79,39 +81,66 @@ function buildCustomerHref(input: {
   return `/v/${input.venueSlug}/t/${input.tableNumber}${query ? `?${query}` : ""}`;
 }
 
-function FeedbackCard({ feedback }: { feedback: CustomerFeedback }) {
+function FeedbackDialog({ feedback }: { feedback: CustomerFeedback }) {
   const isSuccess = feedback.tone === "success";
 
   return (
-    <Card
-      className={
-        isSuccess
-          ? "rounded-[1.4rem] border-emerald-200 bg-emerald-50 shadow-sm shadow-emerald-900/5"
-          : "rounded-[1.4rem] border-destructive/20 bg-destructive/8 shadow-sm shadow-black/5"
-      }
-    >
-      <CardHeader className="space-y-3 px-4 py-4">
-        <div
-          className={
-            isSuccess
-              ? "flex size-10 items-center justify-center rounded-2xl bg-emerald-600 text-white"
-              : "flex size-10 items-center justify-center rounded-2xl bg-destructive/15 text-destructive"
-          }
-        >
-          {isSuccess ? (
-            <CheckCircle2 className="size-4" />
-          ) : (
-            <CircleAlert className="size-4" />
-          )}
-        </div>
-        <div className="space-y-1">
-          <CardTitle className="text-base">{feedback.title}</CardTitle>
-          <CardDescription className="text-sm leading-6 text-muted-foreground">
-            {feedback.message}
-          </CardDescription>
-        </div>
-      </CardHeader>
-    </Card>
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-[rgba(20,28,36,0.34)] px-5">
+      <Card
+        className={
+          isSuccess
+            ? "w-full max-w-sm rounded-[1.8rem] border-white/80 bg-white shadow-[0_28px_70px_rgba(15,23,42,0.2)]"
+            : "w-full max-w-sm rounded-[1.8rem] border-white/80 bg-white shadow-[0_28px_70px_rgba(15,23,42,0.2)]"
+        }
+      >
+        <CardHeader className="space-y-4 px-5 py-5 text-center">
+          <div
+            className={
+              isSuccess
+                ? "mx-auto flex size-14 items-center justify-center rounded-[1.25rem] bg-emerald-50 text-emerald-700"
+                : "mx-auto flex size-14 items-center justify-center rounded-[1.25rem] bg-destructive/10 text-destructive"
+            }
+          >
+            {isSuccess ? (
+              <CheckCircle2 className="size-6" />
+            ) : (
+              <CircleAlert className="size-6" />
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <p
+              className={
+                isSuccess
+                  ? "text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-700/80"
+                  : "text-[11px] font-semibold uppercase tracking-[0.3em] text-destructive/80"
+              }
+            >
+              {isSuccess ? "Request sent" : "Something went wrong"}
+            </p>
+            <CardTitle className="text-[1.7rem] leading-tight">
+              {feedback.title}
+            </CardTitle>
+            <CardDescription className="text-sm leading-6 text-muted-foreground">
+              {feedback.message}
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent className="px-5 pb-5">
+          <Button
+            asChild
+            size="lg"
+            className={
+              isSuccess
+                ? "h-12 w-full rounded-[1.2rem] bg-emerald-700 text-base font-semibold text-white shadow-lg shadow-emerald-900/15 hover:bg-emerald-800 active:scale-[0.985]"
+                : "h-12 w-full rounded-[1.2rem] text-base font-semibold"
+            }
+            variant={isSuccess ? "default" : "destructive"}
+          >
+            <Link href={feedback.dismissHref}>Okay</Link>
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
@@ -123,6 +152,7 @@ export function CustomerTableView({
   serviceActions,
   view,
   feedback = null,
+  sentActionType = null,
 }: CustomerTableViewProps) {
   const homeActions = homeActionTypes
     .map((type) => serviceActions.find((action) => action.type === type))
@@ -138,6 +168,8 @@ export function CustomerTableView({
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(117,91,61,0.08),transparent_0),linear-gradient(180deg,#f3eee6_0%,#f8f5f0_36%,#fbfaf7_100%)]">
+      {feedback ? <FeedbackDialog feedback={feedback} /> : null}
+
       <div className="mx-auto flex min-h-screen max-w-sm flex-col px-4 pb-[calc(env(safe-area-inset-bottom)+0.875rem)] pt-3 sm:max-w-md sm:px-5">
         <header className="rounded-[1.5rem] border border-white/80 bg-white/94 px-4 py-3 shadow-lg shadow-black/5 backdrop-blur">
           <div className="flex items-center justify-between gap-3">
@@ -214,6 +246,8 @@ export function CustomerTableView({
                 venueSlug={venue.slug}
                 tableNumber={table.tableNumber}
                 actions={homeActions}
+                view={view}
+                sentActionType={sentActionType}
               />
             </section>
 
@@ -241,8 +275,6 @@ export function CustomerTableView({
                 </div>
               </section>
             ) : null}
-
-            {feedback ? <FeedbackCard feedback={feedback} /> : null}
 
             <footer className="mt-auto pt-1">
               <Button
@@ -362,8 +394,6 @@ export function CustomerTableView({
             </section>
 
             <div className="sticky bottom-0 mt-auto space-y-3 rounded-[1.75rem] border border-white/80 bg-white/94 p-3 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur">
-              {feedback ? <FeedbackCard feedback={feedback} /> : null}
-
               <div className="space-y-1 px-1">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-primary/80">
                   Quick service
@@ -378,6 +408,8 @@ export function CustomerTableView({
                 tableNumber={table.tableNumber}
                 actions={menuQuickActions}
                 layout="dock"
+                view={view}
+                sentActionType={sentActionType}
               />
             </div>
           </main>

@@ -15,6 +15,7 @@ import { serviceActionDefinitions } from "@/lib/types";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import {
   createServiceRequestSchema,
+  customerViewSchema,
   staffRequestFilterSchema,
   staffPageSchema,
   updateServiceRequestStatusSchema,
@@ -60,6 +61,38 @@ function resolveStaffRedirectPath(input: {
   const query = searchParams.toString();
 
   return `/staff${query ? `?${query}` : ""}`;
+}
+
+function resolveCustomerRedirectPath(input: {
+  venueSlug: string;
+  tableNumber: number;
+  view?: string | null;
+  notice?: string | null;
+  sent?: string | null;
+  error?: string | null;
+}) {
+  const searchParams = new URLSearchParams();
+  const parsedView = customerViewSchema.safeParse(input.view);
+
+  if (parsedView.success && parsedView.data === "menu") {
+    searchParams.set("view", "menu");
+  }
+
+  if (input.notice) {
+    searchParams.set("notice", input.notice);
+  }
+
+  if (input.sent) {
+    searchParams.set("sent", input.sent);
+  }
+
+  if (input.error) {
+    searchParams.set("error", input.error);
+  }
+
+  const query = searchParams.toString();
+
+  return `/v/${input.venueSlug}/t/${input.tableNumber}${query ? `?${query}` : ""}`;
 }
 
 export async function createServiceRequestAction(
@@ -177,21 +210,49 @@ export async function createServiceRequestAction(
   };
 }
 
-export async function submitServiceRequestFormAction(
-  _previousState: ServiceRequestActionResult,
-  formData: FormData
-): Promise<ServiceRequestActionResult> {
+export async function submitCustomerServiceRequestAction(formData: FormData) {
   const venueSlug = String(formData.get("venueSlug") ?? "");
   const tableNumber = String(formData.get("tableNumber") ?? "");
   const requestType = String(formData.get("requestType") ?? "");
+  const view = formData.get("view");
   const note = formData.get("note");
 
-  return createServiceRequestAction({
+  const result = await createServiceRequestAction({
     venueSlug,
     tableNumber,
     requestType,
     note: typeof note === "string" ? note : undefined,
   });
+
+  const parsedInput = createServiceRequestSchema.safeParse({
+    venueSlug,
+    tableNumber,
+    requestType,
+    note: typeof note === "string" ? note : undefined,
+  });
+
+  if (!parsedInput.success) {
+    redirect(
+      resolveCustomerRedirectPath({
+        venueSlug,
+        tableNumber: Number.parseInt(tableNumber || "0", 10) || 0,
+        view: typeof view === "string" ? view : null,
+        error: result.error ?? "We could not send your request.",
+      })
+    );
+  }
+
+  redirect(
+    resolveCustomerRedirectPath({
+      venueSlug: parsedInput.data.venueSlug,
+      tableNumber: parsedInput.data.tableNumber,
+      view: typeof view === "string" ? view : null,
+      notice: result.success ? parsedInput.data.requestType : null,
+      error: result.success
+        ? null
+        : result.error ?? "We could not send your request.",
+    })
+  );
 }
 
 export async function updateServiceRequestStatusAction(

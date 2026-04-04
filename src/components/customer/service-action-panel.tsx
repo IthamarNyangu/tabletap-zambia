@@ -1,12 +1,16 @@
 import type { ServiceAction } from "@/lib/types";
 import { ServiceActionSubmitButton } from "@/components/customer/service-action-submit-button";
 import { cn } from "@/lib/utils";
+import type { CustomerView } from "@/lib/validations/service-request";
+import type { ServiceActionType } from "@/lib/types";
 
 interface ServiceActionPanelProps {
   venueSlug: string;
   tableNumber: number;
   actions: ServiceAction[];
   layout?: "grid" | "dock";
+  view: CustomerView;
+  sentActionType?: ServiceActionType | null;
 }
 
 export function ServiceActionPanel({
@@ -14,6 +18,8 @@ export function ServiceActionPanel({
   tableNumber,
   actions,
   layout = "grid",
+  view,
+  sentActionType = null,
 }: ServiceActionPanelProps) {
   if (!actions.length) {
     return null;
@@ -33,6 +39,8 @@ export function ServiceActionPanel({
           tableNumber={tableNumber}
           action={action}
           layout={layout}
+          view={view}
+          showSuccess={sentActionType === action.type}
         />
       ))}
     </div>
