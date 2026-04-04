@@ -1,36 +1,30 @@
-"use client";
-
-import { startTransition, useState } from "react";
+import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import {
   ConciergeBell,
   LifeBuoy,
   ReceiptText,
   TimerReset,
+  UtensilsCrossed,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 
-import { updateServiceRequestStatusAction } from "@/lib/actions/service-requests";
+import { RequestStatusSubmitButton } from "@/components/staff/request-status-submit-button";
+import { submitStaffStatusUpdateFormAction } from "@/lib/actions/service-requests";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RequestStatusBadge } from "@/components/staff/request-status-badge";
-import type {
-  ServiceRequest,
-  ServiceRequestStatus,
-  ServiceRequestStatusActionResult,
-  Venue,
-} from "@/lib/types";
+import type { ServiceRequest, Venue } from "@/lib/types";
 import { serviceActionDefinitions } from "@/lib/types";
+import type { StaffRequestFilter } from "@/lib/validations/service-request";
 import { cn } from "@/lib/utils";
 
 interface StaffDashboardViewProps {
   venue: Venue;
   requests: ServiceRequest[];
+  activeFilter: StaffRequestFilter;
+  actionError?: string | null;
 }
-
-type RequestFilter = "all" | ServiceRequestStatus;
 
 const requestTypeMeta: Record<
   keyof typeof serviceActionDefinitions,
@@ -39,6 +33,10 @@ const requestTypeMeta: Record<
   call_waiter: {
     icon: ConciergeBell,
     accentClassName: "bg-primary/8 text-primary",
+  },
+  ready_to_order: {
+    icon: UtensilsCrossed,
+    accentClassName: "bg-amber-50 text-amber-700",
   },
   request_bill: {
     icon: ReceiptText,
@@ -50,7 +48,7 @@ const requestTypeMeta: Record<
   },
 };
 
-const filterOptions: { value: RequestFilter; label: string }[] = [
+const filterOptions: { value: StaffRequestFilter; label: string }[] = [
   { value: "all", label: "All" },
   { value: "pending", label: "Pending" },
   { value: "attended", label: "Attended" },
@@ -62,15 +60,16 @@ const timeFormatter = new Intl.DateTimeFormat("en-ZM", {
   minute: "2-digit",
 });
 
+function buildStaffHref(filter: StaffRequestFilter) {
+  return filter === "all" ? "/staff" : `/staff?status=${filter}`;
+}
+
 export function StaffDashboardView({
   venue,
   requests,
+  activeFilter,
+  actionError = null,
 }: StaffDashboardViewProps) {
-  const router = useRouter();
-  const [activeFilter, setActiveFilter] = useState<RequestFilter>("all");
-  const [pendingRequestId, setPendingRequestId] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
-
   const sortedRequests = [...requests].sort(
     (left, right) =>
       new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
@@ -88,32 +87,6 @@ export function StaffDashboardView({
     activeFilter === "all"
       ? sortedRequests
       : sortedRequests.filter((request) => request.status === activeFilter);
-
-  function handleStatusUpdate(
-    requestId: string,
-    nextStatus: "attended" | "closed"
-  ) {
-    setPendingRequestId(requestId);
-    setActionError(null);
-
-    startTransition(async () => {
-      const result: ServiceRequestStatusActionResult =
-        await updateServiceRequestStatusAction({
-          requestId,
-          nextStatus,
-        });
-
-      if (!result.success) {
-        setActionError(
-          result.error ?? "We could not update that request right now."
-        );
-      } else {
-        router.refresh();
-      }
-
-      setPendingRequestId(null);
-    });
-  }
 
   return (
     <DashboardShell
@@ -186,12 +159,11 @@ export function StaffDashboardView({
                 const isActive = filter.value === activeFilter;
 
                 return (
-                  <button
+                  <Link
                     key={filter.value}
-                    type="button"
+                    href={buildStaffHref(filter.value)}
                     role="tab"
                     aria-selected={isActive}
-                    onClick={() => setActiveFilter(filter.value)}
                     className={cn(
                       "rounded-[1.1rem] px-4 py-3 text-sm font-medium transition-colors",
                       isActive
@@ -205,7 +177,7 @@ export function StaffDashboardView({
                         {counts[filter.value]}
                       </span>
                     </span>
-                  </button>
+                  </Link>
                 );
               })}
             </div>
@@ -222,7 +194,6 @@ export function StaffDashboardView({
               visibleRequests.map((request) => {
                 const meta = requestTypeMeta[request.requestType];
                 const Icon = meta.icon;
-                const isPending = pendingRequestId === request.id;
                 const nextStatus =
                   request.status === "pending"
                     ? "attended"
@@ -235,6 +206,8 @@ export function StaffDashboardView({
                     : nextStatus === "closed"
                       ? "Close request"
                       : null;
+                const pendingLabel =
+                  nextStatus === "attended" ? "Updating..." : "Closing...";
 
                 return (
                   <div
@@ -287,17 +260,15 @@ export function StaffDashboardView({
                           </div>
 
                           {nextStatus && nextActionLabel ? (
-                            <Button
-                              type="button"
-                              size="sm"
-                              onClick={() =>
-                                handleStatusUpdate(request.id, nextStatus)
-                              }
-                              disabled={isPending}
-                              className="rounded-full"
-                            >
-                              {isPending ? "Updating..." : nextActionLabel}
-                            </Button>
+                            <form action={submitStaffStatusUpdateFormAction}>
+                              <input type="hidden" name="requestId" value={request.id} />
+                              <input type="hidden" name="nextStatus" value={nextStatus} />
+                              <input type="hidden" name="filter" value={activeFilter} />
+                              <RequestStatusSubmitButton
+                                label={nextActionLabel}
+                                pendingLabel={pendingLabel}
+                              />
+                            </form>
                           ) : (
                             <Badge
                               variant="outline"

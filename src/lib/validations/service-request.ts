@@ -1,8 +1,16 @@
 import { z } from "zod";
 
-import { serviceRequestTypes } from "@/lib/types";
+import {
+  serviceRequestStatuses,
+  serviceRequestTypes,
+} from "@/lib/types";
 
 const updatableServiceRequestStatuses = ["attended", "closed"] as const;
+const customerViewModes = ["home", "menu"] as const;
+const staffRequestFilters = [
+  "all",
+  ...serviceRequestStatuses,
+] as const;
 
 export const venueSlugSchema = z
   .string()
@@ -47,6 +55,16 @@ export const customerRouteParamsSchema = z.object({
   tableNumber: tableNumberSchema,
 });
 
+export const customerViewSchema = z
+  .enum(customerViewModes)
+  .optional()
+  .transform((value) => value ?? "home");
+
+export const staffRequestFilterSchema = z
+  .enum(staffRequestFilters)
+  .optional()
+  .transform((value) => value ?? "all");
+
 export const createServiceRequestSchema = z.object({
   venueSlug: venueSlugSchema,
   tableNumber: tableNumberSchema,
@@ -64,9 +82,11 @@ export const updateServiceRequestStatusSchema = z.object({
 });
 
 export type CustomerRouteParams = z.infer<typeof customerRouteParamsSchema>;
+export type CustomerView = z.infer<typeof customerViewSchema>;
 export type CreateServiceRequestInput = z.infer<
   typeof createServiceRequestSchema
 >;
+export type StaffRequestFilter = z.infer<typeof staffRequestFilterSchema>;
 export type UpdateServiceRequestStatusInput = z.infer<
   typeof updateServiceRequestStatusSchema
 >;

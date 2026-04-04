@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist_Mono, Manrope } from "next/font/google";
 
 import "./globals.css";
@@ -26,6 +26,11 @@ export const metadata: Metadata = {
   },
   description:
     "Supabase-backed MVP for a QR-based table service product for restaurants, bars, lounges, lodges, and outdoor venues.",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#f8f5f0",
+  colorScheme: "light",
 };
 
 export default function RootLayout({

@@ -62,6 +62,7 @@ const tableStatusClassMap: Record<TableStatus, string> = {
 
 const actionIcons: Record<ServiceActionType, LucideIcon> = {
   call_waiter: Sparkles,
+  ready_to_order: UtensilsCrossed,
   request_bill: ReceiptText,
   need_assistance: ShieldCheck,
 };

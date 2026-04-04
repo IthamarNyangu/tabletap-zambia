@@ -1,5 +1,6 @@
 export const serviceRequestTypes = [
   "call_waiter",
+  "ready_to_order",
   "request_bill",
   "need_assistance",
 ] as const;
@@ -47,6 +48,8 @@ export interface ServiceActionDefinition {
   shortLabel: string;
   description: string;
   estimatedResponse: string;
+  pendingLabel: string;
+  successMessage: string;
 }
 
 export interface ServiceAction extends ServiceActionDefinition {
@@ -106,6 +109,7 @@ export interface VenueActionsRow {
   id: string;
   venue_id: string;
   call_waiter_enabled: boolean;
+  ready_to_order_enabled: boolean;
   request_bill_enabled: boolean;
   need_assistance_enabled: boolean;
   created_at: string;
@@ -180,6 +184,7 @@ export interface VenueActions {
   id: string;
   venueId: string;
   callWaiterEnabled: boolean;
+  readyToOrderEnabled: boolean;
   requestBillEnabled: boolean;
   needAssistanceEnabled: boolean;
   createdAt: string;
@@ -242,8 +247,19 @@ export const serviceActionDefinitions: Record<
     type: "call_waiter",
     label: "Call Waiter",
     shortLabel: "Waiter",
-    description: "Let staff know your table is ready for service.",
+    description: "Let staff know you need someone at the table.",
     estimatedResponse: "Usually under 2 minutes",
+    pendingLabel: "Calling waiter...",
+    successMessage: "A waiter has been notified.",
+  },
+  ready_to_order: {
+    type: "ready_to_order",
+    label: "Ready to Order",
+    shortLabel: "Order",
+    description: "Tell staff your table is ready to place an order.",
+    estimatedResponse: "A waiter will head your way",
+    pendingLabel: "Notifying staff...",
+    successMessage: "Staff knows you're ready to order.",
   },
   request_bill: {
     type: "request_bill",
@@ -251,12 +267,16 @@ export const serviceActionDefinitions: Record<
     shortLabel: "Bill",
     description: "Ask for the bill without losing the flow of the table.",
     estimatedResponse: "Prepared within 3 minutes",
+    pendingLabel: "Requesting bill...",
+    successMessage: "Your bill request has been sent.",
   },
   need_assistance: {
     type: "need_assistance",
-    label: "Need Assistance",
-    shortLabel: "Assistance",
-    description: "Use this for menu questions or a quick check-in.",
+    label: "Need Help",
+    shortLabel: "Help",
+    description: "Ask for help with the menu, table, or anything you need.",
     estimatedResponse: "A team member will stop by soon",
+    pendingLabel: "Requesting help...",
+    successMessage: "Help is on the way.",
   },
 };

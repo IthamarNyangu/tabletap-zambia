@@ -3,10 +3,23 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { StaffDashboardView } from "@/components/staff/staff-dashboard-view";
 import { customerDemoHref } from "@/lib/mock-data";
 import { getStaffDashboardData } from "@/lib/supabase/queries";
+import { staffRequestFilterSchema } from "@/lib/validations/service-request";
 
 export const dynamic = "force-dynamic";
 
-export default async function StaffPage() {
+export default async function StaffPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    status?: string;
+    error?: string;
+  }>;
+}) {
+  const resolvedSearchParams = await searchParams;
+  const parsedFilter = staffRequestFilterSchema.safeParse(
+    resolvedSearchParams.status
+  );
+  const activeFilter = parsedFilter.success ? parsedFilter.data : "all";
   const data = await getStaffDashboardData();
 
   if (!data) {
@@ -26,5 +39,12 @@ export default async function StaffPage() {
     );
   }
 
-  return <StaffDashboardView venue={data.venue} requests={data.requests} />;
+  return (
+    <StaffDashboardView
+      venue={data.venue}
+      requests={data.requests}
+      activeFilter={activeFilter}
+      actionError={resolvedSearchParams.error ?? null}
+    />
+  );
 }

@@ -126,11 +126,13 @@ where venue.slug = 'grandaddies';
 insert into public.venue_actions (
   venue_id,
   call_waiter_enabled,
+  ready_to_order_enabled,
   request_bill_enabled,
   need_assistance_enabled
 )
 select
   id,
+  true,
   true,
   true,
   true
@@ -170,6 +172,7 @@ join public.tables as table_row
 join (
   values
     (2, 'call_waiter', 'pending', 'Ready to order mains.', interval '6 minutes', interval '0 minutes', interval '0 minutes'),
+    (3, 'ready_to_order', 'pending', 'Guests are settled and ready to place their first round.', interval '4 minutes', interval '0 minutes', interval '0 minutes'),
     (4, 'request_bill', 'attended', 'Need a split bill for two cards.', interval '12 minutes', interval '4 minutes', interval '0 minutes'),
     (7, 'need_assistance', 'pending', 'Guest wants to confirm allergens.', interval '9 minutes', interval '0 minutes', interval '0 minutes'),
     (10, 'call_waiter', 'closed', 'Dessert menu already delivered.', interval '24 minutes', interval '18 minutes', interval '8 minutes'),

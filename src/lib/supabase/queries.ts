@@ -89,6 +89,7 @@ function mapVenueActions(row: VenueActionsRow): VenueActions {
     id: row.id,
     venueId: row.venue_id,
     callWaiterEnabled: row.call_waiter_enabled,
+    readyToOrderEnabled: row.ready_to_order_enabled,
     requestBillEnabled: row.request_bill_enabled,
     needAssistanceEnabled: row.need_assistance_enabled,
     createdAt: row.created_at,
@@ -119,6 +120,8 @@ function isActionEnabled(
   switch (requestType) {
     case "call_waiter":
       return settings.callWaiterEnabled;
+    case "ready_to_order":
+      return settings.readyToOrderEnabled;
     case "request_bill":
       return settings.requestBillEnabled;
     case "need_assistance":

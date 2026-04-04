@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import type {
   ServiceActionType,
@@ -14,6 +15,7 @@ import { serviceActionDefinitions } from "@/lib/types";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
 import {
   createServiceRequestSchema,
+  staffRequestFilterSchema,
   updateServiceRequestStatusSchema,
 } from "@/lib/validations/service-request";
 
@@ -24,11 +26,33 @@ function isRequestTypeEnabled(
   switch (requestType) {
     case "call_waiter":
       return settings.call_waiter_enabled;
+    case "ready_to_order":
+      return settings.ready_to_order_enabled;
     case "request_bill":
       return settings.request_bill_enabled;
     case "need_assistance":
       return settings.need_assistance_enabled;
   }
+}
+
+function resolveStaffRedirectPath(input: {
+  filter?: string | null;
+  error?: string | null;
+}) {
+  const searchParams = new URLSearchParams();
+  const parsedFilter = staffRequestFilterSchema.safeParse(input.filter);
+
+  if (parsedFilter.success && parsedFilter.data !== "all") {
+    searchParams.set("status", parsedFilter.data);
+  }
+
+  if (input.error) {
+    searchParams.set("error", input.error);
+  }
+
+  const query = searchParams.toString();
+
+  return `/staff${query ? `?${query}` : ""}`;
 }
 
 export async function createServiceRequestAction(
@@ -141,9 +165,26 @@ export async function createServiceRequestAction(
 
   return {
     success: true,
-    message: `${serviceActionDefinitions[requestType].label} request sent.`,
+    message: serviceActionDefinitions[requestType].successMessage,
     requestId: insertedRequest?.id,
   };
+}
+
+export async function submitServiceRequestFormAction(
+  _previousState: ServiceRequestActionResult,
+  formData: FormData
+): Promise<ServiceRequestActionResult> {
+  const venueSlug = String(formData.get("venueSlug") ?? "");
+  const tableNumber = String(formData.get("tableNumber") ?? "");
+  const requestType = String(formData.get("requestType") ?? "");
+  const note = formData.get("note");
+
+  return createServiceRequestAction({
+    venueSlug,
+    tableNumber,
+    requestType,
+    note: typeof note === "string" ? note : undefined,
+  });
 }
 
 export async function updateServiceRequestStatusAction(
@@ -255,4 +296,24 @@ export async function updateServiceRequestStatusAction(
   return {
     success: true,
   };
+}
+
+export async function submitStaffStatusUpdateFormAction(formData: FormData) {
+  const requestId = String(formData.get("requestId") ?? "");
+  const nextStatus = String(formData.get("nextStatus") ?? "");
+  const filter = formData.get("filter");
+
+  const result = await updateServiceRequestStatusAction({
+    requestId,
+    nextStatus,
+  });
+
+  redirect(
+    resolveStaffRedirectPath({
+      filter: typeof filter === "string" ? filter : null,
+      error: result.success
+        ? null
+        : result.error ?? "We could not update that request right now.",
+    })
+  );
 }
