@@ -7,13 +7,22 @@ interface BrandMarkProps {
   href?: string;
   className?: string;
   compact?: boolean;
+  subtitle?: string | null;
 }
 
 export function BrandMark({
   href = "/",
   className,
   compact = false,
+  subtitle,
 }: BrandMarkProps) {
+  const resolvedSubtitle =
+    subtitle !== undefined
+      ? subtitle
+      : compact
+        ? "Table service, simplified"
+        : "Supabase-backed MVP";
+
   const content = (
     <>
       <span className="flex size-11 items-center justify-center rounded-2xl border border-white/60 bg-white/85 shadow-sm shadow-black/5 backdrop-blur">
@@ -24,9 +33,11 @@ export function BrandMark({
           TableTap Zambia
           {!compact ? <Sparkles className="size-3.5 text-primary/70" /> : null}
         </span>
-        <span className="truncate font-heading text-lg leading-none text-foreground">
-          {compact ? "Table service, simplified" : "Supabase-backed MVP"}
-        </span>
+        {resolvedSubtitle ? (
+          <span className="truncate font-heading text-lg leading-none text-foreground">
+            {resolvedSubtitle}
+          </span>
+        ) : null}
       </span>
     </>
   );

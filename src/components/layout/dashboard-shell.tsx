@@ -11,8 +11,13 @@ interface DashboardShellProps {
   currentPath: "/staff" | "/admin";
   eyebrow: string;
   title: string;
-  description: string;
+  description?: string;
   tablePreviewHref?: string;
+  brandSubtitle?: string | null;
+  headerAlign?: "left" | "center";
+  headerLayout?: "stacked" | "split";
+  titleClassName?: string;
+  titleVisual?: ReactNode;
   children: ReactNode;
 }
 
@@ -22,6 +27,11 @@ export function DashboardShell({
   title,
   description,
   tablePreviewHref = customerDemoHref,
+  brandSubtitle,
+  headerAlign = "left",
+  headerLayout = "stacked",
+  titleClassName,
+  titleVisual,
   children,
 }: DashboardShellProps) {
   const navLinks = [
@@ -46,45 +56,148 @@ export function DashboardShell({
     <div className="min-h-screen bg-[linear-gradient(180deg,rgba(243,239,232,0.9),rgba(248,246,241,1))]">
       <div className="mx-auto flex min-h-screen max-w-6xl flex-col px-4 py-4 sm:px-6 lg:px-8">
         <header className="rounded-[2rem] border border-white/70 bg-white/80 p-4 shadow-lg shadow-black/5 backdrop-blur">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          {headerLayout === "split" ? (
             <div className="space-y-4">
-              <BrandMark compact />
-              <div className="max-w-2xl space-y-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.32em] text-primary/80">
-                  {eyebrow}
-                </p>
-                <div className="space-y-2">
-                  <h1 className="font-heading text-3xl leading-tight text-foreground sm:text-4xl">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <BrandMark compact subtitle={brandSubtitle} />
+
+                <nav
+                  aria-label="Dashboard navigation"
+                  className="flex flex-wrap gap-2 sm:justify-end"
+                >
+                  {navLinks.map(({ href, label, icon: Icon }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={cn(
+                        "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors",
+                        currentPath === href
+                          ? "border-primary/20 bg-primary text-primary-foreground shadow-sm"
+                          : "border-border/70 bg-background/70 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      )}
+                    >
+                      <Icon className="size-4" />
+                      {label}
+                    </Link>
+                  ))}
+                </nav>
+              </div>
+
+              {titleVisual ? (
+                <>
+                  <h1 className="sr-only">{title}</h1>
+                  <div className={cn("flex justify-center", titleClassName)}>
+                    {titleVisual}
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-2 text-center">
+                  {eyebrow ? (
+                    <p className="text-xs font-semibold uppercase tracking-[0.32em] text-primary/80">
+                      {eyebrow}
+                    </p>
+                  ) : null}
+                  <h1 className={cn("font-heading text-3xl leading-tight text-foreground sm:text-4xl", titleClassName)}>
                     {title}
                   </h1>
-                  <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
-                    {description}
-                  </p>
+                  {description ? (
+                    <p className="mx-auto max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
+                      {description}
+                    </p>
+                  ) : null}
                 </div>
-              </div>
+              )}
             </div>
-
-            <nav
-              aria-label="Dashboard navigation"
-              className="flex flex-wrap gap-2 lg:justify-end"
+          ) : (
+            <div
+              className={cn(
+                "flex flex-col gap-5",
+                headerAlign === "center"
+                  ? "items-center"
+                  : "lg:flex-row lg:items-start lg:justify-between"
+              )}
             >
-              {navLinks.map(({ href, label, icon: Icon }) => (
-                <Link
-                  key={href}
-                  href={href}
+              <div
+                className={cn(
+                  "space-y-4",
+                  headerAlign === "center" && "w-full text-center lg:text-center"
+                )}
+              >
+                <BrandMark
+                  compact
+                  subtitle={brandSubtitle}
+                  className={cn(headerAlign === "center" && "justify-center")}
+                />
+                <div
                   className={cn(
-                    "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors",
-                    currentPath === href
-                      ? "border-primary/20 bg-primary text-primary-foreground shadow-sm"
-                      : "border-border/70 bg-background/70 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    "max-w-2xl space-y-3",
+                    headerAlign === "center" && "mx-auto"
                   )}
                 >
-                  <Icon className="size-4" />
-                  {label}
-                </Link>
-              ))}
-            </nav>
-          </div>
+                  {eyebrow ? (
+                    <p className="text-xs font-semibold uppercase tracking-[0.32em] text-primary/80">
+                      {eyebrow}
+                    </p>
+                  ) : null}
+                  <div className="space-y-2">
+                    {titleVisual ? (
+                      <>
+                        <h1 className="sr-only">{title}</h1>
+                        <div
+                          className={cn(
+                            headerAlign === "center"
+                              ? "flex justify-center"
+                              : "flex justify-start",
+                            titleClassName
+                          )}
+                        >
+                          {titleVisual}
+                        </div>
+                      </>
+                    ) : (
+                      <h1
+                        className={cn(
+                          "font-heading text-3xl leading-tight text-foreground sm:text-4xl",
+                          titleClassName
+                        )}
+                      >
+                        {title}
+                      </h1>
+                    )}
+                    {description ? (
+                      <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
+                        {description}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+
+              <nav
+                aria-label="Dashboard navigation"
+                className={cn(
+                  "flex flex-wrap gap-2",
+                  headerAlign === "center" ? "justify-center" : "lg:justify-end"
+                )}
+              >
+                {navLinks.map(({ href, label, icon: Icon }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={cn(
+                      "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors",
+                      currentPath === href
+                        ? "border-primary/20 bg-primary text-primary-foreground shadow-sm"
+                        : "border-border/70 bg-background/70 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    )}
+                  >
+                    <Icon className="size-4" />
+                    {label}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          )}
         </header>
 
         <main className="flex-1 py-6">{children}</main>

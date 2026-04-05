@@ -1,8 +1,7 @@
+import Image from "next/image";
 import type { LucideIcon } from "lucide-react";
 import {
   LayoutGrid,
-  MapPinned,
-  QrCode,
   ReceiptText,
   ShieldCheck,
   Sparkles,
@@ -14,7 +13,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -34,6 +32,7 @@ import type {
   Venue,
   VenueTable,
 } from "@/lib/types";
+import { getVenueBranding } from "@/lib/venue-branding";
 import { cn } from "@/lib/utils";
 
 interface AdminDashboardViewProps {
@@ -80,96 +79,82 @@ export function AdminDashboardView({
     0
   );
   const enabledActions = serviceActions.filter((action) => action.enabled);
+  const branding = getVenueBranding(venue.slug);
 
   return (
     <DashboardShell
       currentPath="/admin"
-      eyebrow="Admin dashboard"
+      eyebrow=""
       title="Venue overview, table preview, and menu structure at a glance"
-      description="This MVP admin screen stays intentionally light: real data, clear read-only visibility, and no extra CRUD complexity yet."
+      brandSubtitle={null}
+      headerLayout="split"
+      titleClassName="w-full"
       tablePreviewHref={`/v/${venue.slug}/t/${tables[0]?.tableNumber ?? 1}`}
+      titleVisual={
+        branding.logoSrc ? (
+          <div className="relative h-20 w-full max-w-[20rem] sm:h-24 sm:max-w-[28rem]">
+            <Image
+              src={branding.logoSrc}
+              alt={branding.logoAlt ?? `${venue.name} logo`}
+              fill
+              preload
+              sizes="(max-width: 640px) 78vw, 28rem"
+              className="object-contain object-center"
+            />
+          </div>
+        ) : (
+          <span className="font-heading text-[1.7rem] leading-tight text-foreground sm:text-[2rem]">
+            {venue.name}
+          </span>
+        )
+      }
     >
       <div className="space-y-5">
-        <Card className="rounded-[2rem] border-border/60 bg-white/88 shadow-lg shadow-black/5">
-          <CardHeader className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary/80">
-                  Venue overview
-                </p>
-                <CardTitle className="font-heading text-3xl">
-                  {venue.name}
-                </CardTitle>
-                <CardDescription className="max-w-2xl text-sm leading-7">
-                  {venue.description}
-                </CardDescription>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-[1.5rem] border border-border/60 bg-secondary/45 p-4">
-                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <MapPinned className="size-4 text-primary" />
-                    {venue.location}
-                  </div>
-                  <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                    {venue.tagline}
-                  </p>
-                </div>
-                <div className="rounded-[1.5rem] border border-border/60 bg-secondary/45 p-4">
-                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <QrCode className="size-4 text-primary" />
-                    Demo table {tables[0]?.tableNumber ?? 1}
-                  </div>
-                  <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                    {venue.ambienceNote}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-2">
-              <Card className="rounded-[1.5rem] border-border/60 bg-background/90 shadow-sm">
-                <CardHeader className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary/80">
+        <Card className="rounded-[1.7rem] border-border/60 bg-white/88 shadow-lg shadow-black/5">
+          <CardContent className="p-3 sm:p-4">
+            <div className="grid grid-cols-4 gap-2 sm:gap-3">
+              <Card className="rounded-[1.25rem] border-border/60 bg-background/90 shadow-sm">
+                <CardHeader className="space-y-1 px-2 py-3 text-center sm:px-3">
+                  <p className="text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-primary/80 sm:text-xs sm:tracking-[0.28em]">
                     Tables
                   </p>
-                  <CardTitle className="font-heading text-3xl">
+                  <CardTitle className="font-heading text-xl sm:text-[1.9rem]">
                     {tables.length}
                   </CardTitle>
                 </CardHeader>
               </Card>
-              <Card className="rounded-[1.5rem] border-border/60 bg-background/90 shadow-sm">
-                <CardHeader className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary/80">
-                    Active requests
+              <Card className="rounded-[1.25rem] border-border/60 bg-background/90 shadow-sm">
+                <CardHeader className="space-y-1 px-2 py-3 text-center sm:px-3">
+                  <p className="text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-primary/80 sm:text-xs sm:tracking-[0.28em]">
+                    Active
                   </p>
-                  <CardTitle className="font-heading text-3xl">
+                  <CardTitle className="font-heading text-xl sm:text-[1.9rem]">
                     {activeRequestCount}
                   </CardTitle>
                 </CardHeader>
               </Card>
-              <Card className="rounded-[1.5rem] border-border/60 bg-background/90 shadow-sm">
-                <CardHeader className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary/80">
+              <Card className="rounded-[1.25rem] border-border/60 bg-background/90 shadow-sm">
+                <CardHeader className="space-y-1 px-2 py-3 text-center sm:px-3">
+                  <p className="text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-primary/80 sm:text-xs sm:tracking-[0.28em]">
                     Menu items
                   </p>
-                  <CardTitle className="font-heading text-3xl">
+                  <CardTitle className="font-heading text-xl sm:text-[1.9rem]">
                     {totalMenuItems}
                   </CardTitle>
                 </CardHeader>
               </Card>
-              <Card className="rounded-[1.5rem] border-border/60 bg-background/90 shadow-sm">
-                <CardHeader className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary/80">
-                    Total requests
+              <Card className="rounded-[1.25rem] border-border/60 bg-background/90 shadow-sm">
+                <CardHeader className="space-y-1 px-2 py-3 text-center sm:px-3">
+                  <p className="text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-primary/80 sm:text-xs sm:tracking-[0.28em]">
+                    Requests
                   </p>
-                  <CardTitle className="font-heading text-3xl">
+                  <CardTitle className="font-heading text-xl sm:text-[1.9rem]">
                     {requestCount}
                   </CardTitle>
                 </CardHeader>
               </Card>
             </div>
-          </CardHeader>
+          </CardContent>
         </Card>
 
         <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
@@ -298,13 +283,10 @@ export function AdminDashboardView({
               <div className="flex size-11 items-center justify-center rounded-2xl bg-secondary text-primary">
                 <UtensilsCrossed className="size-5" />
               </div>
-              <div>
+              <div className="space-y-0.5">
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary/80">
                   Menu preview
                 </p>
-                <CardTitle className="font-heading text-3xl">
-                  Categories and items backed by Supabase now
-                </CardTitle>
               </div>
             </div>
           </CardHeader>

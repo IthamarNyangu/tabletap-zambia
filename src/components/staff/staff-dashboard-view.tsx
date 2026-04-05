@@ -178,63 +178,47 @@ export function StaffDashboardView({
       currentPath="/staff"
       eyebrow="Staff dashboard"
       title="Service requests arranged for fast table response"
-      description="Repeated taps from the same table are grouped together so staff can act once, see the latest time, and spot duplicates quickly."
+      brandSubtitle={null}
+      headerAlign="center"
+      titleClassName="text-[1.7rem] sm:text-[2rem]"
       tablePreviewHref={`/v/${venue.slug}/t/${requests[0]?.tableNumber ?? 1}`}
     >
       <div className="space-y-5">
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card className="rounded-[1.75rem] border-border/60 bg-white/85 shadow-sm shadow-black/5">
-            <CardHeader className="space-y-2">
+        <div className="grid grid-cols-3 gap-3">
+          <Card className="rounded-[1.35rem] border-border/60 bg-white/88 shadow-sm shadow-black/5">
+            <CardHeader className="space-y-1 px-3 py-3 text-center sm:px-4">
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary/80">
                 Pending now
               </p>
-              <CardTitle className="font-heading text-3xl">
+              <CardTitle className="font-heading text-2xl sm:text-[1.9rem]">
                 {counts.pending}
               </CardTitle>
             </CardHeader>
-            <CardContent className="text-sm leading-7 text-muted-foreground">
-              Grouped request cards still waiting for a staff touch.
-            </CardContent>
           </Card>
-          <Card className="rounded-[1.75rem] border-border/60 bg-white/85 shadow-sm shadow-black/5">
-            <CardHeader className="space-y-2">
+          <Card className="rounded-[1.35rem] border-border/60 bg-white/88 shadow-sm shadow-black/5">
+            <CardHeader className="space-y-1 px-3 py-3 text-center sm:px-4">
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary/80">
                 In progress
               </p>
-              <CardTitle className="font-heading text-3xl">
+              <CardTitle className="font-heading text-2xl sm:text-[1.9rem]">
                 {counts.attended}
               </CardTitle>
             </CardHeader>
-            <CardContent className="text-sm leading-7 text-muted-foreground">
-              Requests acknowledged and being handled.
-            </CardContent>
           </Card>
-          <Card className="rounded-[1.75rem] border-border/60 bg-white/85 shadow-sm shadow-black/5">
-            <CardHeader className="space-y-2">
+          <Card className="rounded-[1.35rem] border-border/60 bg-white/88 shadow-sm shadow-black/5">
+            <CardHeader className="space-y-1 px-3 py-3 text-center sm:px-4">
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary/80">
                 Closed
               </p>
-              <CardTitle className="font-heading text-3xl">
+              <CardTitle className="font-heading text-2xl sm:text-[1.9rem]">
                 {counts.closed}
               </CardTitle>
             </CardHeader>
-            <CardContent className="text-sm leading-7 text-muted-foreground">
-              Completed request groups kept visible for shift review.
-            </CardContent>
           </Card>
         </div>
 
         <Card className="rounded-[2rem] border-border/60 bg-white/88 shadow-lg shadow-black/5">
-          <CardHeader className="space-y-4">
-            <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary/80">
-                Filter requests
-              </p>
-              <CardTitle className="font-heading text-3xl">
-                Readable at a glance, even during peak service
-              </CardTitle>
-            </div>
-
+          <CardHeader className="space-y-4 px-4 py-4 sm:px-6 sm:py-5">
             <div
               role="tablist"
               aria-label="Request status filter"
