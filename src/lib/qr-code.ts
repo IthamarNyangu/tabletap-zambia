@@ -33,12 +33,13 @@ export interface TableQrAssetInput {
 
 function getVenueLogoFilePath(venueSlug: string) {
   const branding = getVenueBranding(venueSlug);
+  const logoSrc = branding.qrLogoSrc ?? branding.logoSrc;
 
-  if (!branding.logoSrc) {
+  if (!logoSrc) {
     return null;
   }
 
-  return path.join(process.cwd(), "public", branding.logoSrc.replace(/^\//, ""));
+  return path.join(process.cwd(), "public", logoSrc.replace(/^\//, ""));
 }
 
 async function loadVenueLogoOverlay(venueSlug: string) {
@@ -55,7 +56,7 @@ async function loadVenueLogoOverlay(venueSlug: string) {
 
     try {
       const logoBuffer = await readFile(logoPath);
-      return sharp(logoBuffer).trim().png().toBuffer();
+      return await sharp(logoBuffer).trim().png().toBuffer();
     } catch {
       return null;
     }
@@ -88,7 +89,7 @@ async function composeBrandedQrPng(input: TableQrAssetInput, qrBuffer: Buffer) {
           width="${badgeWidth}"
           height="${badgeHeight}"
           rx="${badgeRadius}"
-          fill="#FFFDF8"
+          fill="#FFFFFF"
         />
       </svg>
     `.trim()
@@ -97,7 +98,7 @@ async function composeBrandedQrPng(input: TableQrAssetInput, qrBuffer: Buffer) {
     .resize({
       width: badgeWidth - 34,
       height: badgeHeight - 22,
-      fit: "contain",
+      fit: "inside",
       withoutEnlargement: true,
     })
     .png()
