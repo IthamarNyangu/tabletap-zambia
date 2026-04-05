@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { QrCode, Sparkles } from "lucide-react";
+import { QrCode } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -29,9 +29,8 @@ export function BrandMark({
         <QrCode className="size-5 text-primary" />
       </span>
       <span className="flex min-w-0 flex-col">
-        <span className="flex items-center gap-2 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+        <span className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
           TableTap Zambia
-          {!compact ? <Sparkles className="size-3.5 text-primary/70" /> : null}
         </span>
         {resolvedSubtitle ? (
           <span className="truncate font-heading text-lg leading-none text-foreground">

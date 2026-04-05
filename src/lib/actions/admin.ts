@@ -12,19 +12,31 @@ import type {
 import { requireAuthContext } from "@/lib/auth/guards";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
+  adminPageSchema,
+  adminRoutePathSchema,
   toggleTableActiveSchema,
   toggleVenueActionSchema,
   upsertMenuItemSchema,
   upsertTableSchema,
 } from "@/lib/validations/admin";
 
+function isUniqueConstraintError(error: { code?: string } | null | undefined) {
+  return error?.code === "23505";
+}
+
 function buildAdminRedirectPath(input?: {
+  path?: "/admin" | "/admin/tables" | "/admin/menu" | "/admin/actions";
   notice?: string | null;
   error?: string | null;
+  page?: number | null;
   editTableId?: string | null;
   editItemId?: string | null;
 }) {
   const searchParams = new URLSearchParams();
+
+  if (input?.page && input.page > 1) {
+    searchParams.set("page", String(input.page));
+  }
 
   if (input?.notice) {
     searchParams.set("notice", input.notice);
@@ -44,7 +56,7 @@ function buildAdminRedirectPath(input?: {
 
   const query = searchParams.toString();
 
-  return `/admin${query ? `?${query}` : ""}`;
+  return `${input?.path ?? "/admin"}${query ? `?${query}` : ""}`;
 }
 
 function buildQrCodeValue(venueSlug: string, tableNumber: number) {
@@ -67,6 +79,16 @@ function resolveVenueActionColumn(actionType: ServiceActionType) {
     case "need_assistance":
       return "need_assistance_enabled";
   }
+}
+
+function resolveAdminRedirectContext(formData: FormData) {
+  const parsedPath = adminRoutePathSchema.safeParse(formData.get("redirectPath"));
+  const parsedPage = adminPageSchema.safeParse(formData.get("page"));
+
+  return {
+    path: parsedPath.success ? parsedPath.data : "/admin",
+    page: parsedPage.success ? parsedPage.data : 1,
+  };
 }
 
 async function requireAdminVenue() {
@@ -97,11 +119,15 @@ async function requireAdminVenue() {
 
 function finalizeAdminMutation() {
   revalidatePath("/admin");
+  revalidatePath("/admin/tables");
+  revalidatePath("/admin/menu");
+  revalidatePath("/admin/actions");
   revalidatePath("/staff");
   revalidatePath("/v/[venueSlug]/t/[tableNumber]", "page");
 }
 
 export async function upsertTableAction(formData: FormData) {
+  const redirectContext = resolveAdminRedirectContext(formData);
   const parsedInput = upsertTableSchema.safeParse({
     tableId: formData.get("tableId") || undefined,
     tableNumber: formData.get("tableNumber"),
@@ -115,6 +141,8 @@ export async function upsertTableAction(formData: FormData) {
   if (!parsedInput.success) {
     redirect(
       buildAdminRedirectPath({
+        path: redirectContext.path,
+        page: redirectContext.page,
         error:
           parsedInput.error.issues[0]?.message ??
           "We could not validate that table.",
@@ -142,6 +170,8 @@ export async function upsertTableAction(formData: FormData) {
   if (duplicateTableError) {
     redirect(
       buildAdminRedirectPath({
+        path: redirectContext.path,
+        page: redirectContext.page,
         error: "We could not check that table number right now.",
         editTableId: input.tableId ?? null,
       })
@@ -151,6 +181,8 @@ export async function upsertTableAction(formData: FormData) {
   if (duplicateTableData) {
     redirect(
       buildAdminRedirectPath({
+        path: redirectContext.path,
+        page: redirectContext.page,
         error: "That table number already exists for this venue.",
         editTableId: input.tableId ?? null,
       })
@@ -170,6 +202,8 @@ export async function upsertTableAction(formData: FormData) {
     if (existingTableError || !existingTableData) {
       redirect(
         buildAdminRedirectPath({
+          path: redirectContext.path,
+          page: redirectContext.page,
           error: "That table could not be found for this venue.",
         })
       );
@@ -201,7 +235,11 @@ export async function upsertTableAction(formData: FormData) {
     if (updateError) {
       redirect(
         buildAdminRedirectPath({
-          error: "We could not save that table right now.",
+          path: redirectContext.path,
+          page: redirectContext.page,
+          error: isUniqueConstraintError(updateError)
+            ? "That table number already exists for this venue."
+            : "We could not save that table right now.",
           editTableId: input.tableId,
         })
       );
@@ -211,6 +249,8 @@ export async function upsertTableAction(formData: FormData) {
 
     redirect(
       buildAdminRedirectPath({
+        path: redirectContext.path,
+        page: redirectContext.page,
         notice: `Saved ${input.label}.`,
       })
     );
@@ -230,7 +270,11 @@ export async function upsertTableAction(formData: FormData) {
   if (insertError) {
     redirect(
       buildAdminRedirectPath({
-        error: "We could not create that table right now.",
+        path: redirectContext.path,
+        page: redirectContext.page,
+        error: isUniqueConstraintError(insertError)
+          ? "That table number already exists for this venue."
+          : "We could not create that table right now.",
       })
     );
   }
@@ -239,12 +283,15 @@ export async function upsertTableAction(formData: FormData) {
 
   redirect(
     buildAdminRedirectPath({
+      path: redirectContext.path,
+      page: redirectContext.page,
       notice: `${input.label} was created.`,
     })
   );
 }
 
 export async function toggleTableActiveAction(formData: FormData) {
+  const redirectContext = resolveAdminRedirectContext(formData);
   const parsedInput = toggleTableActiveSchema.safeParse({
     tableId: formData.get("tableId"),
     nextActive: formData.get("nextActive"),
@@ -253,6 +300,8 @@ export async function toggleTableActiveAction(formData: FormData) {
   if (!parsedInput.success) {
     redirect(
       buildAdminRedirectPath({
+        path: redirectContext.path,
+        page: redirectContext.page,
         error:
           parsedInput.error.issues[0]?.message ??
           "We could not update that table.",
@@ -271,6 +320,8 @@ export async function toggleTableActiveAction(formData: FormData) {
   if (tableError || !tableData) {
     redirect(
       buildAdminRedirectPath({
+        path: redirectContext.path,
+        page: redirectContext.page,
         error: "That table could not be found for this venue.",
       })
     );
@@ -288,6 +339,8 @@ export async function toggleTableActiveAction(formData: FormData) {
   if (updateError) {
     redirect(
       buildAdminRedirectPath({
+        path: redirectContext.path,
+        page: redirectContext.page,
         error: "We could not update that table right now.",
       })
     );
@@ -297,6 +350,8 @@ export async function toggleTableActiveAction(formData: FormData) {
 
   redirect(
     buildAdminRedirectPath({
+      path: redirectContext.path,
+      page: redirectContext.page,
       notice: parsedInput.data.nextActive
         ? `${table.label} is active again.`
         : `${table.label} was deactivated.`,
@@ -305,6 +360,7 @@ export async function toggleTableActiveAction(formData: FormData) {
 }
 
 export async function upsertMenuItemAction(formData: FormData) {
+  const redirectContext = resolveAdminRedirectContext(formData);
   const parsedInput = upsertMenuItemSchema.safeParse({
     itemId: formData.get("itemId") || undefined,
     categoryId: formData.get("categoryId"),
@@ -319,6 +375,7 @@ export async function upsertMenuItemAction(formData: FormData) {
   if (!parsedInput.success) {
     redirect(
       buildAdminRedirectPath({
+        path: redirectContext.path,
         error:
           parsedInput.error.issues[0]?.message ??
           "We could not validate that menu item.",
@@ -342,6 +399,7 @@ export async function upsertMenuItemAction(formData: FormData) {
   if (categoryError || !categoryData) {
     redirect(
       buildAdminRedirectPath({
+        path: redirectContext.path,
         error: "Choose a menu category from this venue.",
         editItemId: input.itemId ?? null,
       })
@@ -360,6 +418,7 @@ export async function upsertMenuItemAction(formData: FormData) {
     if (existingItemError || !existingItemData) {
       redirect(
         buildAdminRedirectPath({
+          path: redirectContext.path,
           error: "That menu item could not be found for this venue.",
         })
       );
@@ -381,6 +440,7 @@ export async function upsertMenuItemAction(formData: FormData) {
     if (updateError) {
       redirect(
         buildAdminRedirectPath({
+          path: redirectContext.path,
           error: "We could not save that menu item right now.",
           editItemId: input.itemId,
         })
@@ -391,6 +451,7 @@ export async function upsertMenuItemAction(formData: FormData) {
 
     redirect(
       buildAdminRedirectPath({
+        path: redirectContext.path,
         notice: `${input.name} was updated.`,
       })
     );
@@ -404,6 +465,7 @@ export async function upsertMenuItemAction(formData: FormData) {
   if (sortOrderError) {
     redirect(
       buildAdminRedirectPath({
+        path: redirectContext.path,
         error: "We could not prepare that menu item right now.",
       })
     );
@@ -424,6 +486,7 @@ export async function upsertMenuItemAction(formData: FormData) {
   if (insertError) {
     redirect(
       buildAdminRedirectPath({
+        path: redirectContext.path,
         error: "We could not create that menu item right now.",
       })
     );
@@ -433,12 +496,14 @@ export async function upsertMenuItemAction(formData: FormData) {
 
   redirect(
     buildAdminRedirectPath({
+      path: redirectContext.path,
       notice: `${input.name} was added to ${category.name}.`,
     })
   );
 }
 
 export async function toggleVenueActionAction(formData: FormData) {
+  const redirectContext = resolveAdminRedirectContext(formData);
   const parsedInput = toggleVenueActionSchema.safeParse({
     actionType: formData.get("actionType"),
     enabled: formData.get("enabled"),
@@ -447,6 +512,7 @@ export async function toggleVenueActionAction(formData: FormData) {
   if (!parsedInput.success) {
     redirect(
       buildAdminRedirectPath({
+        path: redirectContext.path,
         error:
           parsedInput.error.issues[0]?.message ??
           "We could not update that venue action.",
@@ -464,6 +530,7 @@ export async function toggleVenueActionAction(formData: FormData) {
   if (actionSettingsError || !actionSettingsData) {
     redirect(
       buildAdminRedirectPath({
+        path: redirectContext.path,
         error: "This venue does not have action settings yet.",
       })
     );
@@ -482,6 +549,7 @@ export async function toggleVenueActionAction(formData: FormData) {
   if (updateError) {
     redirect(
       buildAdminRedirectPath({
+        path: redirectContext.path,
         error: "We could not update that venue action right now.",
       })
     );
@@ -491,6 +559,7 @@ export async function toggleVenueActionAction(formData: FormData) {
 
   redirect(
     buildAdminRedirectPath({
+      path: redirectContext.path,
       notice: parsedInput.data.enabled
         ? "That service action is now enabled."
         : "That service action is now disabled.",

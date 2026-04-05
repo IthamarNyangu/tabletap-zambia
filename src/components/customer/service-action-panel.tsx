@@ -13,6 +13,26 @@ interface ServiceActionPanelProps {
   sentActionType?: ServiceActionType | null;
 }
 
+function shouldShowActionSuccess(input: {
+  actionType: ServiceActionType;
+  sentActionType: ServiceActionType | null;
+  view: CustomerView;
+}) {
+  if (!input.sentActionType) {
+    return false;
+  }
+
+  if (input.sentActionType === input.actionType) {
+    return true;
+  }
+
+  return (
+    input.view === "home" &&
+    input.actionType === "call_waiter" &&
+    input.sentActionType === "ready_to_order"
+  );
+}
+
 export function ServiceActionPanel({
   venueSlug,
   tableNumber,
@@ -40,7 +60,11 @@ export function ServiceActionPanel({
           action={action}
           layout={layout}
           view={view}
-          showSuccess={sentActionType === action.type}
+          showSuccess={shouldShowActionSuccess({
+            actionType: action.type,
+            sentActionType,
+            view,
+          })}
         />
       ))}
     </div>

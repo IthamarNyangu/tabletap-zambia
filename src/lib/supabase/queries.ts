@@ -351,3 +351,93 @@ export async function getAdminDashboardData(
     ).length,
   };
 }
+
+export async function getAdminTablesManagementData(venueId: string): Promise<{
+  venue: Venue;
+  tables: VenueTable[];
+} | null> {
+  const supabase = await createSupabaseServerClient();
+  const venueRow = await getVenueById(venueId, supabase);
+
+  if (!venueRow) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("tables")
+    .select("*")
+    .eq("venue_id", venueRow.id)
+    .order("table_number", { ascending: true });
+
+  if (error) {
+    throw new Error(`Failed to load tables: ${error.message}`);
+  }
+
+  return {
+    venue: mapVenue(venueRow),
+    tables: ((data ?? []) as VenueTableRow[])
+      .map(mapVenueTable)
+      .sort((left, right) => left.tableNumber - right.tableNumber),
+  };
+}
+
+export async function getAdminMenuManagementData(venueId: string): Promise<{
+  venue: Venue;
+  menuCategories: MenuCategory[];
+} | null> {
+  const supabase = await createSupabaseServerClient();
+  const venueRow = await getVenueById(venueId, supabase);
+
+  if (!venueRow) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("menu_categories")
+    .select("*, menu_items(*)")
+    .eq("venue_id", venueRow.id);
+
+  if (error) {
+    throw new Error(`Failed to load menu categories: ${error.message}`);
+  }
+
+  return {
+    venue: mapVenue(venueRow),
+    menuCategories: ((data ?? []) as MenuCategoryWithItemsRow[])
+      .map((row) => mapMenuCategory(row, { includeUnavailable: true }))
+      .sort((left, right) => left.sortOrder - right.sortOrder),
+  };
+}
+
+export async function getAdminActionsManagementData(
+  venueId: string
+): Promise<{
+  venue: Venue;
+  serviceActions: ServiceAction[];
+} | null> {
+  const supabase = await createSupabaseServerClient();
+  const venueRow = await getVenueById(venueId, supabase);
+
+  if (!venueRow) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("venue_actions")
+    .select("*")
+    .eq("venue_id", venueRow.id)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to load venue actions: ${error.message}`);
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return {
+    venue: mapVenue(venueRow),
+    serviceActions: resolveServiceActions(mapVenueActions(data as VenueActionsRow)),
+  };
+}

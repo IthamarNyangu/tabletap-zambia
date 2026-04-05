@@ -40,6 +40,23 @@ const entityIdSchema = z
   .optional()
   .transform((value) => value ?? undefined);
 
+const requiredEntityIdSchema = z.string().uuid("The selected record is invalid.");
+
+const adminRoutePaths = [
+  "/admin",
+  "/admin/tables",
+  "/admin/menu",
+  "/admin/actions",
+] as const;
+
+const rawPageNumberSchema = z.union([
+  z
+    .string()
+    .trim()
+    .regex(/^\d+$/, "Page must be numeric."),
+  z.number().int().positive(),
+]);
+
 const seatsSchema = z
   .union([
     z
@@ -98,6 +115,24 @@ const menuItemTagsSchema = z
 export const adminFeedbackSchema = noticeSchema;
 export const adminTableEditSchema = entityIdSchema;
 export const adminMenuItemEditSchema = entityIdSchema;
+export const adminEntityIdSchema = requiredEntityIdSchema;
+export const adminRoutePathSchema = z.enum(adminRoutePaths);
+export const qrDownloadFormatSchema = z.enum(["png", "pdf"], {
+  error: "QR format is invalid.",
+});
+export const adminPageSchema = rawPageNumberSchema
+  .optional()
+  .transform((value) => {
+    if (value === undefined) {
+      return 1;
+    }
+
+    return typeof value === "string" ? Number.parseInt(value, 10) : value;
+  })
+  .refine(
+    (value) => Number.isInteger(value) && value > 0 && value <= 999,
+    "Page must be between 1 and 999."
+  );
 
 export const upsertTableSchema = z
   .object({

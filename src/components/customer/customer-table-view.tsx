@@ -61,7 +61,6 @@ const homeActionTypes: ServiceActionType[] = [
 ];
 
 const menuActionTypes: ServiceActionType[] = [
-  "call_waiter",
   "ready_to_order",
 ];
 
@@ -406,7 +405,7 @@ export function CustomerTableView({
                   Quick service
                 </p>
                 <p className="text-sm leading-6 text-muted-foreground">
-                  Call someone over or let staff know you&apos;re ready to order.
+                  Let staff know your table is ready to place an order.
                 </p>
               </div>
 

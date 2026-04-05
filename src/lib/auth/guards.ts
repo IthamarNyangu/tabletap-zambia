@@ -42,7 +42,7 @@ export function getDefaultAuthenticatedPath(role: AppRole) {
   return role === "admin" ? "/admin" : "/staff";
 }
 
-export const getOptionalAuthContext = cache(async (): Promise<AuthContext | null> => {
+export async function loadOptionalAuthContext(): Promise<AuthContext | null> {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -74,7 +74,9 @@ export const getOptionalAuthContext = cache(async (): Promise<AuthContext | null
     email: user.email ?? null,
     profile,
   };
-});
+}
+
+export const getOptionalAuthContext = cache(loadOptionalAuthContext);
 
 export async function requireAuthContext(options: {
   allowedRoles: AppRole[];
