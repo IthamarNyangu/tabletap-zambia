@@ -69,11 +69,16 @@ function buildCustomerHref(input: {
   venueSlug: string;
   tableNumber: number;
   view?: CustomerView;
+  sentActionType?: ServiceActionType | null;
 }) {
   const searchParams = new URLSearchParams();
 
   if (input.view === "menu") {
     searchParams.set("view", "menu");
+  }
+
+  if (input.sentActionType) {
+    searchParams.set("sent", input.sentActionType);
   }
 
   const query = searchParams.toString();
@@ -224,6 +229,7 @@ export function CustomerTableView({
                     venueSlug: venue.slug,
                     tableNumber: table.tableNumber,
                     view: "menu",
+                    sentActionType,
                   })}
                 >
                   <span className="flex min-w-0 flex-1 flex-col gap-1">
@@ -301,6 +307,7 @@ export function CustomerTableView({
                       venueSlug: venue.slug,
                       tableNumber: table.tableNumber,
                       view: "home",
+                      sentActionType,
                     })}
                   >
                     <ArrowLeft className="size-4" />
