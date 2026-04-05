@@ -11,8 +11,12 @@ import type {
   VenueRow,
   VenueTableRow,
 } from "@/lib/types";
+import { requireAuthContext } from "@/lib/auth/guards";
 import { serviceActionDefinitions } from "@/lib/types";
-import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import {
+  createSupabaseServerClient,
+  createSupabaseServiceRoleClient,
+} from "@/lib/supabase/server";
 import {
   createServiceRequestSchema,
   customerViewSchema,
@@ -138,6 +142,7 @@ export async function createServiceRequestAction(
     .from("tables")
     .select("id, table_number")
     .eq("venue_id", venue.id)
+    .eq("is_active", true)
     .eq("table_number", tableNumber)
     .maybeSingle();
 
@@ -258,6 +263,10 @@ export async function submitCustomerServiceRequestAction(formData: FormData) {
 export async function updateServiceRequestStatusAction(
   input: unknown
 ): Promise<ServiceRequestStatusActionResult> {
+  const authContext = await requireAuthContext({
+    allowedRoles: ["staff", "admin"],
+    nextPath: "/staff",
+  });
   const parsedInput = updateServiceRequestStatusSchema.safeParse(input);
 
   if (!parsedInput.success) {
@@ -269,7 +278,7 @@ export async function updateServiceRequestStatusAction(
     };
   }
 
-  const supabase = createSupabaseServiceRoleClient();
+  const supabase = await createSupabaseServerClient();
   const { requestIds, nextStatus } = parsedInput.data;
 
   const { data: requestData, error: requestError } = await supabase
@@ -277,6 +286,7 @@ export async function updateServiceRequestStatusAction(
     .select(
       "id, status, request_type, table_id, attended_at, venue_id, tables!service_requests_table_id_fkey(table_number), venues(slug)"
     )
+    .eq("venue_id", authContext.profile.venueId)
     .in("id", requestIds);
 
   if (requestError) {
@@ -310,6 +320,7 @@ export async function updateServiceRequestStatusAction(
     currentRequests.some(
       (request) =>
         request.status !== currentStatus ||
+        request.venue_id !== authContext.profile.venueId ||
         request.venue_id !== currentRequests[0]?.venue_id ||
         request.table_id !== currentRequests[0]?.table_id ||
         request.request_type !== currentRequests[0]?.request_type
@@ -354,6 +365,7 @@ export async function updateServiceRequestStatusAction(
   const { error: updateError } = await supabase
     .from("service_requests")
     .update(updatePayload)
+    .eq("venue_id", authContext.profile.venueId)
     .in("id", requestIds);
 
   if (updateError) {

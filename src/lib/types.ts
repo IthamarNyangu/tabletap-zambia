@@ -19,6 +19,10 @@ export const tableStatuses = ["ready", "occupied", "reserved"] as const;
 
 export type TableStatus = (typeof tableStatuses)[number];
 
+export const appRoles = ["admin", "staff"] as const;
+
+export type AppRole = (typeof appRoles)[number];
+
 export interface MarketingFeature {
   id: "scan-menu" | "service-actions" | "light-ops";
   eyebrow: string;
@@ -75,6 +79,7 @@ export interface VenueTableRow {
   zone: string;
   seats: number;
   status: TableStatus;
+  is_active: boolean;
   qr_code_value: string;
   created_at: string;
 }
@@ -134,6 +139,22 @@ export interface ServiceRequestWithTableRow extends ServiceRequestRow {
     | null;
 }
 
+export interface ProfileRow {
+  id: string;
+  venue_id: string;
+  full_name: string | null;
+  role: AppRole;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface ProfileWithVenueRow extends ProfileRow {
+  venues:
+    | Pick<VenueRow, "id" | "name" | "slug">
+    | Pick<VenueRow, "id" | "name" | "slug">[]
+    | null;
+}
+
 export interface Venue {
   id: string;
   name: string;
@@ -153,6 +174,7 @@ export interface VenueTable {
   zone: string;
   seats: number;
   status: TableStatus;
+  isActive: boolean;
   qrCodeValue: string;
   createdAt: string;
 }
@@ -203,6 +225,17 @@ export interface ServiceRequest {
   closedAt: string | null;
 }
 
+export interface Profile {
+  id: string;
+  venueId: string;
+  venueName: string;
+  venueSlug: string;
+  fullName: string | null;
+  role: AppRole;
+  isActive: boolean;
+  createdAt: string;
+}
+
 export interface CustomerTablePageData {
   venue: Venue;
   table: VenueTable;
@@ -237,6 +270,12 @@ export interface ServiceRequestActionResult {
 export interface ServiceRequestStatusActionResult {
   success: boolean;
   error?: string;
+}
+
+export interface AuthContext {
+  userId: string;
+  email: string | null;
+  profile: Profile;
 }
 
 export const serviceActionDefinitions: Record<

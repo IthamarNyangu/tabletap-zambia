@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ArrowRight, Building2, ScanLine, UsersRound } from "lucide-react";
+import { ArrowRight, Building2, LogOut, ScanLine, UsersRound } from "lucide-react";
 
+import { logoutAction } from "@/lib/actions/auth";
 import { BrandMark } from "@/components/layout/brand-mark";
 import { Button } from "@/components/ui/button";
 import { customerDemoHref } from "@/lib/mock-data";
@@ -52,6 +53,36 @@ export function DashboardShell({
     },
   ] as const;
 
+  const navItems = (
+    <>
+      {navLinks.map(({ href, label, icon: Icon }) => (
+        <Link
+          key={href}
+          href={href}
+          className={cn(
+            "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors",
+            currentPath === href
+              ? "border-primary/20 bg-primary text-primary-foreground shadow-sm"
+              : "border-border/70 bg-background/70 text-muted-foreground hover:bg-secondary hover:text-foreground"
+          )}
+        >
+          <Icon className="size-4" />
+          {label}
+        </Link>
+      ))}
+
+      <form action={logoutAction}>
+        <button
+          type="submit"
+          className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/70 px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+        >
+          <LogOut className="size-4" />
+          Logout
+        </button>
+      </form>
+    </>
+  );
+
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,rgba(243,239,232,0.9),rgba(248,246,241,1))]">
       <div className="mx-auto flex min-h-screen max-w-6xl flex-col px-4 py-4 sm:px-6 lg:px-8">
@@ -65,21 +96,7 @@ export function DashboardShell({
                   aria-label="Dashboard navigation"
                   className="flex flex-wrap gap-2 sm:justify-end"
                 >
-                  {navLinks.map(({ href, label, icon: Icon }) => (
-                    <Link
-                      key={href}
-                      href={href}
-                      className={cn(
-                        "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors",
-                        currentPath === href
-                          ? "border-primary/20 bg-primary text-primary-foreground shadow-sm"
-                          : "border-border/70 bg-background/70 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                      )}
-                    >
-                      <Icon className="size-4" />
-                      {label}
-                    </Link>
-                  ))}
+                  {navItems}
                 </nav>
               </div>
 
@@ -180,21 +197,7 @@ export function DashboardShell({
                   headerAlign === "center" ? "justify-center" : "lg:justify-end"
                 )}
               >
-                {navLinks.map(({ href, label, icon: Icon }) => (
-                  <Link
-                    key={href}
-                    href={href}
-                    className={cn(
-                      "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors",
-                      currentPath === href
-                        ? "border-primary/20 bg-primary text-primary-foreground shadow-sm"
-                        : "border-border/70 bg-background/70 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                    )}
-                  >
-                    <Icon className="size-4" />
-                    {label}
-                  </Link>
-                ))}
+                {navItems}
               </nav>
             </div>
           )}

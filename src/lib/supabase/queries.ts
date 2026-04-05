@@ -23,7 +23,10 @@ import {
   serviceActionDefinitions,
   serviceRequestTypes,
 } from "@/lib/types";
-import { createSupabaseServiceRoleClient } from "@/lib/supabase/server";
+import {
+  createSupabasePublicServerClient,
+  createSupabaseServerClient,
+} from "@/lib/supabase/server";
 
 function mapVenue(row: VenueRow): Venue {
   return {
@@ -47,6 +50,7 @@ function mapVenueTable(row: VenueTableRow): VenueTable {
     zone: row.zone,
     seats: row.seats,
     status: row.status,
+    isActive: row.is_active,
     qrCodeValue: row.qr_code_value,
     createdAt: row.created_at,
   };
@@ -67,10 +71,14 @@ function mapMenuItem(row: MenuItemRow): MenuItem {
   };
 }
 
-function mapMenuCategory(row: MenuCategoryWithItemsRow): MenuCategory {
+function mapMenuCategory(
+  row: MenuCategoryWithItemsRow,
+  options?: { includeUnavailable?: boolean }
+): MenuCategory {
+  const includeUnavailable = options?.includeUnavailable ?? false;
   const items = (row.menu_items ?? [])
     .map(mapMenuItem)
-    .filter((item) => item.isAvailable)
+    .filter((item) => includeUnavailable || item.isAvailable)
     .sort((left, right) => left.sortOrder - right.sortOrder);
 
   return {
@@ -136,27 +144,11 @@ export function resolveServiceActions(settings: VenueActions): ServiceAction[] {
   }));
 }
 
-async function getPrimaryVenueRow() {
-  const supabase = createSupabaseServiceRoleClient();
-  const { data, error } = await supabase
-    .from("venues")
-    .select("*")
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) {
-    throw new Error(`Failed to load venue: ${error.message}`);
-  }
-
-  return (data as VenueRow | null) ?? null;
-}
-
 export async function getCustomerTablePageData(input: {
   venueSlug: string;
   tableNumber: number;
 }): Promise<CustomerTablePageData | null> {
-  const supabase = createSupabaseServiceRoleClient();
+  const supabase = createSupabasePublicServerClient();
 
   const { data: venueData, error: venueError } = await supabase
     .from("venues")
@@ -180,6 +172,7 @@ export async function getCustomerTablePageData(input: {
         .from("tables")
         .select("*")
         .eq("venue_id", venueRow.id)
+        .eq("is_active", true)
         .eq("table_number", input.tableNumber)
         .maybeSingle(),
       supabase
@@ -210,7 +203,7 @@ export async function getCustomerTablePageData(input: {
   }
 
   const menuCategories = ((categoriesData ?? []) as MenuCategoryWithItemsRow[])
-    .map(mapMenuCategory)
+    .map((row) => mapMenuCategory(row))
     .sort((left, right) => left.sortOrder - right.sortOrder);
 
   const venueActions = mapVenueActions(actionsData as VenueActionsRow);
@@ -231,14 +224,33 @@ export async function getCustomerTablePageData(input: {
   };
 }
 
-export async function getStaffDashboardData(): Promise<StaffDashboardData | null> {
-  const venueRow = await getPrimaryVenueRow();
+async function getVenueById(
+  venueId: string,
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>
+) {
+  const { data, error } = await supabase
+    .from("venues")
+    .select("*")
+    .eq("id", venueId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to load venue: ${error.message}`);
+  }
+
+  return (data as VenueRow | null) ?? null;
+}
+
+export async function getStaffDashboardData(
+  venueId: string
+): Promise<StaffDashboardData | null> {
+  const supabase = await createSupabaseServerClient();
+  const venueRow = await getVenueById(venueId, supabase);
 
   if (!venueRow) {
     return null;
   }
 
-  const supabase = createSupabaseServiceRoleClient();
   const { data, error } = await supabase
     .from("service_requests")
     .select(
@@ -259,14 +271,16 @@ export async function getStaffDashboardData(): Promise<StaffDashboardData | null
   };
 }
 
-export async function getAdminDashboardData(): Promise<AdminDashboardData | null> {
-  const venueRow = await getPrimaryVenueRow();
+export async function getAdminDashboardData(
+  venueId: string
+): Promise<AdminDashboardData | null> {
+  const supabase = await createSupabaseServerClient();
+  const venueRow = await getVenueById(venueId, supabase);
 
   if (!venueRow) {
     return null;
   }
 
-  const supabase = createSupabaseServiceRoleClient();
   const [
     { data: tablesData, error: tablesError },
     { data: categoriesData, error: categoriesError },
@@ -318,7 +332,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData | null
     .sort((left, right) => left.tableNumber - right.tableNumber);
 
   const menuCategories = ((categoriesData ?? []) as MenuCategoryWithItemsRow[])
-    .map(mapMenuCategory)
+    .map((row) => mapMenuCategory(row, { includeUnavailable: true }))
     .sort((left, right) => left.sortOrder - right.sortOrder);
 
   const venueActions = mapVenueActions(actionsData as VenueActionsRow);

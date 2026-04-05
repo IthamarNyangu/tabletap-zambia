@@ -1,6 +1,7 @@
 import { DatabaseSetupState } from "@/components/layout/database-setup-state";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { StaffDashboardView } from "@/components/staff/staff-dashboard-view";
+import { requireAuthContext } from "@/lib/auth/guards";
 import { customerDemoHref } from "@/lib/mock-data";
 import { getStaffDashboardData } from "@/lib/supabase/queries";
 import {
@@ -26,7 +27,21 @@ export default async function StaffPage({
   const parsedPage = staffPageSchema.safeParse(resolvedSearchParams.page);
   const activeFilter = parsedFilter.success ? parsedFilter.data : "all";
   const currentPage = parsedPage.success ? parsedPage.data : 1;
-  const data = await getStaffDashboardData();
+  const query = new URLSearchParams();
+
+  if (resolvedSearchParams.status) {
+    query.set("status", resolvedSearchParams.status);
+  }
+
+  if (resolvedSearchParams.page) {
+    query.set("page", resolvedSearchParams.page);
+  }
+
+  const authContext = await requireAuthContext({
+    allowedRoles: ["staff", "admin"],
+    nextPath: `/staff${query.size ? `?${query.toString()}` : ""}`,
+  });
+  const data = await getStaffDashboardData(authContext.profile.venueId);
 
   if (!data) {
     return (

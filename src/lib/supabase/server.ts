@@ -46,6 +46,17 @@ export async function createSupabaseServerClient() {
   });
 }
 
+export function createSupabasePublicServerClient() {
+  const { url, anonKey } = getSupabaseServerConfig();
+
+  return createClient(url, anonKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
+
 export function createSupabaseServiceRoleClient() {
   const { url, serviceRoleKey } = getSupabaseServerConfig();
 
