@@ -82,6 +82,7 @@ const filterOptions: { value: StaffRequestFilter; label: string }[] = [
 const timeFormatter = new Intl.DateTimeFormat("en-ZM", {
   hour: "2-digit",
   minute: "2-digit",
+  hour12: false,
 });
 
 function buildStaffHref(filter: StaffRequestFilter, page = 1) {
