@@ -67,19 +67,45 @@ async function loadVenueLogoOverlay(venueSlug: string) {
   return logoPromise;
 }
 
-async function composeBrandedQrPng(input: TableQrAssetInput, qrBuffer: Buffer) {
-  const logoBuffer = await loadVenueLogoOverlay(input.venueSlug);
+async function buildVenueBadgeContent(
+  venueSlug: string,
+  badgeWidth: number,
+  badgeHeight: number
+) {
+  const logoBuffer = await loadVenueLogoOverlay(venueSlug);
 
   if (!logoBuffer) {
-    return qrBuffer;
+    return null;
   }
 
+  return sharp(logoBuffer)
+    .resize({
+      width: badgeWidth - 34,
+      height: badgeHeight - 22,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .png()
+    .toBuffer();
+}
+
+async function composeBrandedQrPng(input: TableQrAssetInput, qrBuffer: Buffer) {
   const qrMetadata = await sharp(qrBuffer).metadata();
   const qrWidth = qrMetadata.width ?? qrPngOptions.width;
   const qrHeight = qrMetadata.height ?? qrPngOptions.width;
   const badgeWidth = Math.round(qrWidth * 0.38);
   const badgeHeight = Math.round(qrWidth * 0.18);
   const badgeRadius = Math.round(badgeHeight / 2);
+  const badgeContent = await buildVenueBadgeContent(
+    input.venueSlug,
+    badgeWidth,
+    badgeHeight
+  );
+
+  if (!badgeContent) {
+    return qrBuffer;
+  }
+
   const badgeSvg = Buffer.from(
     `
       <svg width="${badgeWidth}" height="${badgeHeight}" viewBox="0 0 ${badgeWidth} ${badgeHeight}" xmlns="http://www.w3.org/2000/svg">
@@ -94,24 +120,15 @@ async function composeBrandedQrPng(input: TableQrAssetInput, qrBuffer: Buffer) {
       </svg>
     `.trim()
   );
-  const resizedLogo = await sharp(logoBuffer)
-    .resize({
-      width: badgeWidth - 34,
-      height: badgeHeight - 22,
-      fit: "inside",
-      withoutEnlargement: true,
-    })
-    .png()
-    .toBuffer();
-  const logoMetadata = await sharp(resizedLogo).metadata();
-  const logoLeft = Math.round((badgeWidth - (logoMetadata.width ?? 0)) / 2);
-  const logoTop = Math.round((badgeHeight - (logoMetadata.height ?? 0)) / 2);
+  const badgeMetadata = await sharp(badgeContent).metadata();
+  const badgeLeft = Math.round((badgeWidth - (badgeMetadata.width ?? 0)) / 2);
+  const badgeTop = Math.round((badgeHeight - (badgeMetadata.height ?? 0)) / 2);
   const badgeBuffer = await sharp(badgeSvg)
     .composite([
       {
-        input: resizedLogo,
-        left: Math.max(0, logoLeft),
-        top: Math.max(0, logoTop),
+        input: badgeContent,
+        left: Math.max(0, badgeLeft),
+        top: Math.max(0, badgeTop),
       },
     ])
     .png()
